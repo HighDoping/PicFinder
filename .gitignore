@@ -5,5 +5,5 @@ build_windows/
 models/
 main.build/
 main.dist/
-libsimple/
+src/backend/libsimple/
 src/installer_dist/

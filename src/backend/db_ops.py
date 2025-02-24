@@ -98,11 +98,16 @@ SELECT * FROM pictures;
 # prepare for multi-platform
 if sys.platform == "win32":
     lib_dir_name = "libsimple-windows-x64"
+    extention_name = "simple"
 elif sys.platform == "linux":
     lib_dir_name = "libsimple-linux-ubuntu-latest"
+    extention_name = "libsimple"
+elif sys.platform == "darwin":
+    lib_dir_name = "libsimple-osx-x64"
+    extention_name = "libsimple"
 else:
     lib_dir_name = "libsimple-windows-x64"
-
+    extention_name = "simple"
 
 is_nuitka = "__compiled__" in globals()
 
@@ -114,7 +119,7 @@ else:
 
 class DB:
     def __init__(self, path, jieba=False):
-        extention_path = lib_dir / "simple"
+        extention_path = lib_dir / extention_name
         dict_path = lib_dir / "dict"
 
         self.conn = sqlite3.connect(path, check_same_thread=False)

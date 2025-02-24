@@ -11,20 +11,17 @@ import requests
 def download_libsimple():
     # Dictionary containing the target libraries and their download URLs
     url_dict = {
-        "libsimple-aarch64-linux-gnu-gcc-9": "https://github.com/wangfenjin/simple/releases/download/v0.4.0/libsimple-aarch64-linux-gnu-gcc-9.zip",
-        "libsimple-linux-ubuntu-latest": "https://github.com/wangfenjin/simple/releases/download/v0.4.0/libsimple-linux-ubuntu-latest.zip",
-        "libsimple-windows-x64": "https://github.com/wangfenjin/simple/releases/download/v0.4.0/libsimple-windows-x64.zip",
+        "libsimple-osx-x64": "https://github.com/wangfenjin/simple/releases/download/v0.5.0/libsimple-osx-x64.zip",
+        "libsimple-linux-ubuntu-latest": "https://github.com/wangfenjin/simple/releases/download/v0.5.0/libsimple-linux-ubuntu-latest.zip",
+        "libsimple-windows-x64": "https://github.com/wangfenjin/simple/releases/download/v0.5.0/libsimple-windows-x64.zip",
     }
     # get platform and architecture
     if sys.platform.startswith("win"):
-        # check if the system is 32 or 64 bit
         lib_to_download = "libsimple-windows-x64"
     elif sys.platform.startswith("linux"):
-        # check if the system is arm or x86
-        if "aarch64" in os.uname().machine:
-            lib_to_download = "libsimple-aarch64-linux-gnu-gcc-9"
-        else:
-            lib_to_download = "libsimple-linux-ubuntu-latest"
+        lib_to_download = "libsimple-linux-ubuntu-latest"
+    elif sys.platform == "darwin":
+        lib_to_download = "libsimple-osx-x64"
     else:
         # exit if the platform is not supported
         print(f"Unsupported OS: {sys.platform}")

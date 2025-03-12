@@ -10,11 +10,7 @@ from pathlib import Path
 import cv2
 import numpy as np
 from PySide6.QtCore import QObject, QThread, Signal
-
-try:
-    from rapidocr_paddle import RapidOCR
-except ImportError:
-    from rapidocr_onnxruntime import RapidOCR
+from rapidocr import RapidOCR
 
 from backend.resources.label_list import coco, image_net
 from backend.yolo import YOLO11, YOLO11Cls
@@ -83,7 +79,6 @@ class ClassificationWorker(QObject):
     def classify_batch(
         self, images: list[np.ndarray], model: str, threshold: float = 0.7
     ):
-
         match model:
             case "YOLO11n":
                 YOLO11_path = models_dir / "yolo11n-cls.onnx"
@@ -105,7 +100,9 @@ class ClassificationWorker(QObject):
 
         results = []
         for i, image in enumerate(images):
-            progress = f"Classification progress: {i+1+finished_files}/{total_images}"
+            progress = (
+                f"Classification progress: {i + 1 + finished_files}/{total_images}"
+            )
             self.progress.emit(progress)
 
             class_ids, confidence = yolo_cls(image)
@@ -250,7 +247,9 @@ class ObjectDetectionWorker(QObject):
         finished_files = self.kwargs["finished_files"]
 
         for i, image in enumerate(images):
-            progress = f"Object detection progress: {i+1+finished_files}/{total_images}"
+            progress = (
+                f"Object detection progress: {i + 1 + finished_files}/{total_images}"
+            )
             self.progress.emit(progress)
             result = []
             for yolo, class_name_list in zip(yolo_list, class_name_list_list):
@@ -270,21 +269,11 @@ class ObjectDetectionWorker(QObject):
 
 def OCR(image: np.ndarray, model: str):
     if model == "RapidOCR":
-
-        if importlib.util.find_spec("rapidocr_paddle") is not None:
-            engine = RapidOCR(det_use_cuda=True, cls_use_cuda=True, rec_use_cuda=True)
-        else:
-            engine = RapidOCR(
-                det_use_cuda=False, cls_use_cuda=False, rec_use_cuda=False
-            )
-
-        result, elapse = engine(image, use_det=True, use_cls=True, use_rec=True)
+        engine = RapidOCR()
+        (result,) = engine(image, use_det=True, use_cls=True, use_rec=True)
         if result is None or len(result) == 0:
             return []
-
-        res = [(i[1], i[2]) for i in result]
-
-        return res
+        return result
     else:
         return []
 
@@ -311,27 +300,16 @@ class OCRWorker(QObject):
 
     def OCR_batch(self, images: list[np.ndarray], model: str):
         if model == "RapidOCR":
-            # if using paddle OCR
-            if importlib.util.find_spec("rapidocr_paddle") is not None:
-                engine = RapidOCR(
-                    det_use_cuda=True, cls_use_cuda=True, rec_use_cuda=True
-                )
-            else:
-                engine = RapidOCR(
-                    det_use_cuda=False, cls_use_cuda=False, rec_use_cuda=False
-                )
-
+            engine = RapidOCR()
             total_images = self.kwargs["total_files"]
             finished_files = self.kwargs["finished_files"]
 
             results = []
             for i, image in enumerate(images):
-                progress = f"OCR progress: {i+1+finished_files}/{total_images}"
+                progress = f"OCR progress: {i + 1 + finished_files}/{total_images}"
                 self.progress.emit(progress)
                 try:
-                    result, elapse = engine(
-                        image, use_det=True, use_cls=True, use_rec=True
-                    )
+                    result = engine(image, use_det=True, use_cls=True, use_rec=True)
                 except Exception as e:
                     path_list = self.kwargs.get("path_list", [])
                     if len(path_list) > i:
@@ -348,8 +326,7 @@ class OCRWorker(QObject):
                 if result is None or len(result) == 0:
                     results.append([])
                     continue
-                res = [(i[1], i[2]) for i in result]
-                results.append(res)
+                results.append(result)
             return results
         else:
             return [[] for _ in images]
@@ -368,7 +345,6 @@ def read_img(
     **kwargs,
 ):
     try:
-
         with open(img_path, "rb") as file:
             img_file = file.read()
             # get md5 hash of image
@@ -393,7 +369,7 @@ def read_img(
 
             cls_end = time.perf_counter()
             logging.debug(
-                f"Image:{img_path.as_posix()},Classification Time: {cls_end-cls_start}"
+                f"Image:{img_path.as_posix()},Classification Time: {cls_end - cls_start}"
             )
 
         if object_detection_model != "None":
@@ -410,7 +386,7 @@ def read_img(
 
             obj_end = time.perf_counter()
             logging.debug(
-                f"Image:{img_path.as_posix()},Object Detection Time: {obj_end-obj_start}"
+                f"Image:{img_path.as_posix()},Object Detection Time: {obj_end - obj_start}"
             )
 
         if OCR_model != "None":
@@ -420,7 +396,9 @@ def read_img(
             res_dict["OCR"] = OCR_res
 
             OCR_end = time.perf_counter()
-            logging.debug(f"Image:{img_path.as_posix()},OCR Time: {OCR_end-OCR_start}")
+            logging.debug(
+                f"Image:{img_path.as_posix()},OCR Time: {OCR_end - OCR_start}"
+            )
 
         return res_dict
     except Exception as e:
@@ -551,7 +529,6 @@ class ReadImgWorker(QObject):
             self.result_emit()
 
     def result_emit(self):
-
         for i, img_path in enumerate(self.image_list):
             result_dict = {}
             result_dict["hash"] = self.hashes[i]

@@ -247,7 +247,7 @@ class IndexWorker(QObject):
             OCR = ""
             ocr_confidence_avg = 0
         else:
-            OCR = " ".join([res[0] for res in ocr_list])
-            ocr_confidence_list = [res[1] for res in ocr_list]
+            OCR = " ".join(ocr_list.txts)
+            ocr_confidence_list = ocr_list.scores
             ocr_confidence_avg = sum(ocr_confidence_list) / len(ocr_confidence_list)
         return OCR, ocr_confidence_avg

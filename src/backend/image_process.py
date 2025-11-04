@@ -9,8 +9,19 @@ from pathlib import Path
 
 import cv2
 import numpy as np
+import rapidocr
 from PySide6.QtCore import QObject, QThread, Signal
-from rapidocr import RapidOCR
+
+rapidocr_params = {
+    "Det.engine_type": rapidocr.EngineType.ONNXRUNTIME,
+    "Det.lang_type": rapidocr.LangDet.CH,
+    "Det.model_type": rapidocr.ModelType.SERVER,
+    "Det.ocr_version": rapidocr.OCRVersion.PPOCRV5,
+    "Rec.engine_type": rapidocr.EngineType.ONNXRUNTIME,
+    "Rec.lang_type": rapidocr.LangRec.CH,
+    "Rec.model_type": rapidocr.ModelType.SERVER,
+    "Rec.ocr_version": rapidocr.OCRVersion.PPOCRV5,
+}
 
 from backend.resources.label_list import coco, image_net
 from backend.yolo import YOLO11, YOLO11Cls
@@ -269,7 +280,7 @@ class ObjectDetectionWorker(QObject):
 
 def OCR(image: np.ndarray, model: str):
     if model == "RapidOCR":
-        engine = RapidOCR()
+        engine = rapidocr.RapidOCR(params=rapidocr_params)
         (result,) = engine(image, use_det=True, use_cls=True, use_rec=True)
         if result is None or len(result) == 0:
             return []
@@ -300,7 +311,7 @@ class OCRWorker(QObject):
 
     def OCR_batch(self, images: list[np.ndarray], model: str):
         if model == "RapidOCR":
-            engine = RapidOCR()
+            engine = rapidocr.RapidOCR(params=rapidocr_params)
             total_images = self.kwargs["total_files"]
             finished_files = self.kwargs["finished_files"]
 

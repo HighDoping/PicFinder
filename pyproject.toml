@@ -19,7 +19,7 @@ optional=true
 
 [tool.poetry.group.cpu.dependencies]
 onnxruntime = "^1.19.2"
-rapidocr = "^2.0.2"
+rapidocr = "^3.4.2"
 
 [tool.poetry.group.dev.dependencies]
 black = "^24.3.0"

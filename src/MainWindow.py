@@ -56,8 +56,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.actionClear_DB.triggered.connect(self.clear_db)
 
         # add actions to menubar
-        self.actionSettings = self.menubar.addAction("Settings")
-        self.actionAbout = self.menubar.addAction("About")
         self.actionSettings.triggered.connect(self.open_settings)
         self.actionAbout.triggered.connect(self.open_about)
 

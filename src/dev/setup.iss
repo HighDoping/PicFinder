@@ -1,6 +1,6 @@
 ﻿#define MyAppName "PicFinder"
 #define MyAppPathName "PicFinder"
-#define MyAppPublisher "HAL9000COM"
+#define MyAppPublisher "HighDoping"
 #define MyAppExeName "main.exe"
 #define MyAppPath "{#SourcePath}\main.dist"
 
@@ -8,7 +8,7 @@
 [Setup]
 AppId={{DFD81750-7230-4E43-ACAC-9830A32CD9A9}
 AppName={#MyAppName}
-AppVersion= GetStringFileInfo("{#SourcePath}..\main.dist\main.exe", 'ProductVersion')
+AppVersion=GetStringFileInfo("{#SourcePath}..\main.dist\main.exe", 'ProductVersion')
 AppPublisher={#MyAppPublisher}
 AppCopyright=GetStringFileInfo("{#SourcePath}..\main.dist\main.exe", 'LegalCopyright')
 DefaultDirName={autopf}\{#MyAppPathName}

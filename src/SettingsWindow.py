@@ -14,7 +14,7 @@ class SettingsWindow(QWidget, Ui_Settings):
         super(SettingsWindow, self).__init__()
         self.setupUi(self)
         self.get_models()
-        self.settings = QSettings("HAL9000COM", "PicFinder")
+        self.settings = QSettings("HighDoping", "PicFinder")
         self.load_settings()
         self.pushButton_save.clicked.connect(self.gui_save)
         self.comboBox_object_detection_model.currentIndexChanged.connect(
@@ -71,12 +71,11 @@ class SettingsWindow(QWidget, Ui_Settings):
         self.doubleSpinBox_object_detection_confidence.setValue(
             float(self.settings.value("object_detection_conf_threshold", 0.7))
         )
-        self.doubleSpinBox_object_detection_iou.setValue(
-            float(self.settings.value("object_detection_iou_threshold", 0.5))
-        )
         self.comboBox_OCR_model.setCurrentText(
             self.settings.value("OCR_model", "RapidOCR")
         )
+        self.spinBox_OCR_parallel.setValue(int(self.settings.value("OCR_parallel", 3)))
+
         self.checkBox_update.setChecked(
             self.settings.value("FullUpdate", False, type=bool)
         )
@@ -105,11 +104,8 @@ class SettingsWindow(QWidget, Ui_Settings):
             "object_detection_conf_threshold",
             self.doubleSpinBox_object_detection_confidence.value(),
         )
-        self.settings.setValue(
-            "object_detection_iou_threshold",
-            self.doubleSpinBox_object_detection_iou.value(),
-        )
         self.settings.setValue("OCR_model", self.comboBox_OCR_model.currentText())
+        self.settings.setValue("OCR_parallel", self.spinBox_OCR_parallel.value())
         self.settings.setValue("FullUpdate", self.checkBox_update.isChecked())
         self.settings.setValue("batch_size", self.spinBox_batch_size.value())
         self.settings.setValue("load_all", self.checkBox_load_all.isChecked())

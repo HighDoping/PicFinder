@@ -3,7 +3,7 @@
 ################################################################################
 ## Form generated from reading UI file 'MainWindow.ui'
 ##
-## Created by: Qt User Interface Compiler version 6.10.0
+## Created by: Qt User Interface Compiler version 6.10.1
 ##
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
@@ -138,3 +138,4 @@ class Ui_MainWindow(object):
         self.menuSettings.setTitle(QCoreApplication.translate("MainWindow", u"Settings", None))
         self.menuAbout.setTitle(QCoreApplication.translate("MainWindow", u"About", None))
     # retranslateUi
+

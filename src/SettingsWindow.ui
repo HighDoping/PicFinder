@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>500</width>
-    <height>400</height>
+    <height>438</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -129,30 +129,6 @@
              </item>
             </layout>
            </item>
-           <item>
-            <layout class="QHBoxLayout" name="horizontalLayout_6">
-             <item>
-              <widget class="QLabel" name="label_6">
-               <property name="text">
-                <string>IoU:</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QDoubleSpinBox" name="doubleSpinBox_object_detection_iou">
-               <property name="maximum">
-                <double>1.000000000000000</double>
-               </property>
-               <property name="singleStep">
-                <double>0.010000000000000</double>
-               </property>
-               <property name="value">
-                <double>0.500000000000000</double>
-               </property>
-              </widget>
-             </item>
-            </layout>
-           </item>
           </layout>
          </item>
         </layout>
@@ -185,6 +161,26 @@
                <string>None</string>
               </property>
              </item>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLabel" name="label_6">
+             <property name="text">
+              <string>Parallel:</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QSpinBox" name="spinBox_OCR_parallel">
+             <property name="minimum">
+              <number>1</number>
+             </property>
+             <property name="maximum">
+              <number>256</number>
+             </property>
+             <property name="value">
+              <number>3</number>
+             </property>
             </widget>
            </item>
           </layout>

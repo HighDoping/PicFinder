@@ -196,7 +196,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.settings_window.show()
 
     def update_settings(self):
-        settings = QSettings("HAL9000COM", "PicFinder")
+        settings = QSettings("HighDoping", "PicFinder")
         self.settings = {}
         self.settings["classification_model"] = settings.value(
             "classification_model", "yolo26n"
@@ -214,6 +214,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             settings.value("object_detection_conf_threshold", 0.7)
         )
         self.settings["OCR_model"] = settings.value("OCR_model", "RapidOCR")
+        self.settings["OCR_parallel"] = settings.value("OCR_parallel", 3)
         self.settings["FullUpdate"] = settings.value("FullUpdate", False, type=bool)
         self.settings["batch_size"] = int(settings.value("batch_size", 100))
         self.settings["load_all"] = settings.value("load_all", False)
@@ -284,10 +285,10 @@ class AboutWindow(QWidget):
         self.label_1 = QLabel(
             f"PicFinder Version: {self.get_version()}, commit: {self.get_commit_hash()}\n"
         )
-        self.label_2 = QLabel("Author: HAL9000COM\n")
+        self.label_2 = QLabel("Author: HighDoping\n")
         self.label_3 = QLabel(
             "For license and source code, please visit:\n"
-            + "<a href=https://github.com/HAL9000COM/PicFinder>GitHub</a>\n"
+            + "<a href=https://github.com/HighDoping/PicFinder>GitHub</a>\n"
         )
         self.label_3.setOpenExternalLinks(True)
         self.label_3.setWordWrap(True)

@@ -3,7 +3,7 @@
 ################################################################################
 ## Form generated from reading UI file 'SettingsWindow.ui'
 ##
-## Created by: Qt User Interface Compiler version 6.7.2
+## Created by: Qt User Interface Compiler version 6.10.1
 ##
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
@@ -23,7 +23,7 @@ class Ui_Settings(object):
     def setupUi(self, Settings):
         if not Settings.objectName():
             Settings.setObjectName(u"Settings")
-        Settings.resize(500, 400)
+        Settings.resize(500, 438)
         icon = QIcon()
         icon.addFile(u"icon.ico", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
         Settings.setWindowIcon(icon)
@@ -114,24 +114,6 @@ class Ui_Settings(object):
 
         self.horizontalLayout_9.addLayout(self.horizontalLayout_7)
 
-        self.horizontalLayout_6 = QHBoxLayout()
-        self.horizontalLayout_6.setObjectName(u"horizontalLayout_6")
-        self.label_6 = QLabel(self.groupBox_3)
-        self.label_6.setObjectName(u"label_6")
-
-        self.horizontalLayout_6.addWidget(self.label_6)
-
-        self.doubleSpinBox_object_detection_iou = QDoubleSpinBox(self.groupBox_3)
-        self.doubleSpinBox_object_detection_iou.setObjectName(u"doubleSpinBox_object_detection_iou")
-        self.doubleSpinBox_object_detection_iou.setMaximum(1.000000000000000)
-        self.doubleSpinBox_object_detection_iou.setSingleStep(0.010000000000000)
-        self.doubleSpinBox_object_detection_iou.setValue(0.500000000000000)
-
-        self.horizontalLayout_6.addWidget(self.doubleSpinBox_object_detection_iou)
-
-
-        self.horizontalLayout_9.addLayout(self.horizontalLayout_6)
-
 
         self.verticalLayout_2.addLayout(self.horizontalLayout_9)
 
@@ -155,6 +137,19 @@ class Ui_Settings(object):
         self.comboBox_OCR_model.setObjectName(u"comboBox_OCR_model")
 
         self.horizontalLayout_5.addWidget(self.comboBox_OCR_model)
+
+        self.label_6 = QLabel(self.groupBox_4)
+        self.label_6.setObjectName(u"label_6")
+
+        self.horizontalLayout_5.addWidget(self.label_6)
+
+        self.spinBox_OCR_parallel = QSpinBox(self.groupBox_4)
+        self.spinBox_OCR_parallel.setObjectName(u"spinBox_OCR_parallel")
+        self.spinBox_OCR_parallel.setMinimum(1)
+        self.spinBox_OCR_parallel.setMaximum(256)
+        self.spinBox_OCR_parallel.setValue(3)
+
+        self.horizontalLayout_5.addWidget(self.spinBox_OCR_parallel)
 
 
         self.verticalLayout.addLayout(self.horizontalLayout_5)
@@ -236,12 +231,12 @@ class Ui_Settings(object):
         self.comboBox_object_detection_model.setItemText(0, QCoreApplication.translate("Settings", u"None", None))
 
         self.label_5.setText(QCoreApplication.translate("Settings", u"Confidence:", None))
-        self.label_6.setText(QCoreApplication.translate("Settings", u"IoU:", None))
         self.groupBox_4.setTitle(QCoreApplication.translate("Settings", u"OCR", None))
         self.label_3.setText(QCoreApplication.translate("Settings", u"Model:", None))
         self.comboBox_OCR_model.setItemText(0, QCoreApplication.translate("Settings", u"RapidOCR", None))
         self.comboBox_OCR_model.setItemText(1, QCoreApplication.translate("Settings", u"None", None))
 
+        self.label_6.setText(QCoreApplication.translate("Settings", u"Parallel:", None))
         self.groupBox_5.setTitle(QCoreApplication.translate("Settings", u"Index Setting", None))
         self.checkBox_update.setText(QCoreApplication.translate("Settings", u"Fully Update Database", None))
         self.label_7.setText(QCoreApplication.translate("Settings", u"Batch Size:", None))

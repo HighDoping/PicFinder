@@ -47,7 +47,7 @@ def build_nuitka():
         "--product-name=PicFinder",
         f"--file-version={get_version()}",
         f"--product-version={get_version()}",
-        "--copyright=Copyright © 2024 HAL9000COM",
+        "--copyright=Copyright © 2024-2026 HighDoping",
     ]
 
     # OS-specific options

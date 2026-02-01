@@ -12,27 +12,29 @@ if __name__ == "__main__":
     args = parser.parse_args()
     if args.full:
         model_names = [
-            "yolo11n.pt",
-            "yolo11s.pt",
-            "yolo11m.pt",
-            "yolo11l.pt",
-            "yolo11x.pt",
-            "yolo11n-cls.pt",
-            "yolo11s-cls.pt",
-            "yolo11m-cls.pt",
-            "yolo11l-cls.pt",
-            "yolo11x-cls.pt",
+            "yolo26n.pt",
+            "yolo26s.pt",
+            "yolo26m.pt",
+            "yolo26l.pt",
+            "yolo26x.pt",
+            "yolo26n-cls.pt",
+            "yolo26s-cls.pt",
+            "yolo26m-cls.pt",
+            "yolo26l-cls.pt",
+            "yolo26x-cls.pt",
         ]
     else:
         model_names = [
-            "yolo11n.pt",
-            "yolo11n-cls.pt",
+            "yolo26n.pt",
+            "yolo26n-cls.pt",
         ]
     os.makedirs(Path(__file__).parent.parent / "models", exist_ok=True)
     for model_name in model_names:
         model = YOLO(model_name)  # load a pretrained model (recommended for training)
         path = model.export(
-            format="onnx", dynamic=False
+            format="onnx",
+            dynamic=False,
+            end2end=True,
         )  # export the model to ONNX format.
         shutil.move(
             path,

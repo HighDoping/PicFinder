@@ -27,11 +27,11 @@ class SettingsWindow(QWidget, Ui_Settings):
         self.models_coco = []
 
         model_files = {
-            "YOLO11n": ["yolo11n.onnx", "yolo11n-cls.onnx"],
-            "YOLO11s": ["yolo11s.onnx", "yolo11s-cls.onnx"],
-            "YOLO11m": ["yolo11m.onnx", "yolo11m-cls.onnx"],
-            "YOLO11l": ["yolo11l.onnx", "yolo11l-cls.onnx"],
-            "YOLO11x": ["yolo11x.onnx", "yolo11x-cls.onnx"],
+            "yolo26n": ["yolo26n.onnx", "yolo26n-cls.onnx"],
+            "yolo26s": ["yolo26s.onnx", "yolo26s-cls.onnx"],
+            "yolo26m": ["yolo26m.onnx", "yolo26m-cls.onnx"],
+            "yolo26l": ["yolo26l.onnx", "yolo26l-cls.onnx"],
+            "yolo26x": ["yolo26x.onnx", "yolo26x-cls.onnx"],
         }
 
         for model, files in model_files.items():
@@ -50,7 +50,7 @@ class SettingsWindow(QWidget, Ui_Settings):
 
     def load_settings(self):
         self.classification_model = self.settings.value(
-            "classification_model", "YOLO11n"
+            "classification_model", "yolo26n"
         )
         if self.classification_model not in self.models_cls:
             self.classification_model = "None"
@@ -59,7 +59,7 @@ class SettingsWindow(QWidget, Ui_Settings):
             float(self.settings.value("classification_threshold", 0.7))
         )
         self.object_detection_model = self.settings.value(
-            "object_detection_model", "YOLO11n"
+            "object_detection_model", "yolo26n"
         )
         if self.object_detection_model not in self.models_coco:
             self.object_detection_model = "None"

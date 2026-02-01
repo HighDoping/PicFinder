@@ -3,6 +3,7 @@
 import hashlib
 import importlib.util
 import logging
+import platform
 import sys
 import time
 from pathlib import Path
@@ -14,17 +15,21 @@ from PySide6.QtCore import QObject, QThread, Signal
 
 rapidocr_params = {
     "Det.engine_type": rapidocr.EngineType.ONNXRUNTIME,
+    "Cls.engine_type": rapidocr.EngineType.ONNXRUNTIME,
+    "Rec.engine_type": rapidocr.EngineType.ONNXRUNTIME,
+    "EngineConfig.onnxruntime.use_coreml": (
+        True if platform.system() == "Darwin" else False
+    ),
     "Det.lang_type": rapidocr.LangDet.CH,
     "Det.model_type": rapidocr.ModelType.SERVER,
-    "Det.ocr_version": rapidocr.OCRVersion.PPOCRV5,
-    "Rec.engine_type": rapidocr.EngineType.ONNXRUNTIME,
+    "Det.ocr_version": rapidocr.OCRVersion.PPOCRV4,
     "Rec.lang_type": rapidocr.LangRec.CH,
     "Rec.model_type": rapidocr.ModelType.SERVER,
-    "Rec.ocr_version": rapidocr.OCRVersion.PPOCRV5,
+    "Rec.ocr_version": rapidocr.OCRVersion.PPOCRV4,
 }
 
-from backend.resources.label_list import coco, image_net
-from backend.yolo import YOLO11, YOLO11Cls
+from backend.resources.label_list import coco, image_net, open_images_v7
+from backend.yolo import YOLO26, YOLO26Cls
 
 is_nuitka = "__compiled__" in globals()
 
@@ -36,19 +41,19 @@ else:
 
 def classify(image: np.ndarray, model: str, threshold: float = 0.7):
     match model:
-        case "YOLO11n":
-            YOLO11_path = models_dir / "yolo11n-cls.onnx"
-        case "YOLO11s":
-            YOLO11_path = models_dir / "yolo11s-cls.onnx"
-        case "YOLO11m":
-            YOLO11_path = models_dir / "yolo11m-cls.onnx"
-        case "YOLO11l":
-            YOLO11_path = models_dir / "yolo11l-cls.onnx"
-        case "YOLO11x":
-            YOLO11_path = models_dir / "yolo11x-cls.onnx"
+        case "yolo26n":
+            yolo26_path = models_dir / "yolo26n-cls.onnx"
+        case "yolo26s":
+            yolo26_path = models_dir / "yolo26s-cls.onnx"
+        case "yolo26m":
+            yolo26_path = models_dir / "yolo26m-cls.onnx"
+        case "yolo26l":
+            yolo26_path = models_dir / "yolo26l-cls.onnx"
+        case "yolo26x":
+            yolo26_path = models_dir / "yolo26x-cls.onnx"
         case _:
             return []
-    yolo_cls = YOLO11Cls(YOLO11_path, conf_thres=threshold)
+    yolo_cls = YOLO26Cls(yolo26_path, conf_thres=threshold)
     class_ids, confidence = yolo_cls(image)
     if len(class_ids) == 0:
         return []
@@ -91,20 +96,20 @@ class ClassificationWorker(QObject):
         self, images: list[np.ndarray], model: str, threshold: float = 0.7
     ):
         match model:
-            case "YOLO11n":
-                YOLO11_path = models_dir / "yolo11n-cls.onnx"
-            case "YOLO11s":
-                YOLO11_path = models_dir / "yolo11s-cls.onnx"
-            case "YOLO11m":
-                YOLO11_path = models_dir / "yolo11m-cls.onnx"
-            case "YOLO11l":
-                YOLO11_path = models_dir / "yolo11l-cls.onnx"
-            case "YOLO11x":
-                YOLO11_path = models_dir / "yolo11x-cls.onnx"
+            case "yolo26n":
+                yolo26_path = models_dir / "yolo26n-cls.onnx"
+            case "yolo26s":
+                yolo26_path = models_dir / "yolo26s-cls.onnx"
+            case "yolo26m":
+                yolo26_path = models_dir / "yolo26m-cls.onnx"
+            case "yolo26l":
+                yolo26_path = models_dir / "yolo26l-cls.onnx"
+            case "yolo26x":
+                yolo26_path = models_dir / "yolo26x-cls.onnx"
             case _:
                 return [[] for _ in images]
 
-        yolo_cls = YOLO11Cls(YOLO11_path, conf_thres=threshold)
+        yolo_cls = YOLO26Cls(yolo26_path, conf_thres=threshold)
 
         total_images = self.kwargs["total_files"]
         finished_files = self.kwargs["finished_files"]
@@ -135,12 +140,12 @@ def object_detection(
     model: str,
     dataset: list[str],
     conf_threshold: float = 0.7,
-    iou_threshold: float = 0.5,
 ):
+
     def YOLO_process(
-        YOLO11_path, conf_threshold, iou_threshold, image, class_name_list
+        yolo26_path, conf_threshold, image, class_name_list
     ):
-        yolo = YOLO11(YOLO11_path, conf_threshold, iou_threshold)
+        yolo = YOLO26(yolo26_path, conf_threshold)
         _, scores, class_ids = yolo(image)
         if not class_ids:
             return []
@@ -151,11 +156,11 @@ def object_detection(
         ]
 
     model_paths = {
-        "YOLO11n": ["yolo11n.onnx"],
-        "YOLO11s": ["yolo11s.onnx"],
-        "YOLO11m": ["yolo11m.onnx"],
-        "YOLO11l": ["yolo11l.onnx"],
-        "YOLO11x": ["yolo11x.onnx"],
+        "yolo26n": ["yolo26n.onnx"],
+        "yolo26s": ["yolo26s.onnx"],
+        "yolo26m": ["yolo26m.onnx"],
+        "yolo26l": ["yolo26l.onnx"],
+        "yolo26x": ["yolo26x.onnx"],
     }
     datasets = {
         "COCO": coco,
@@ -173,10 +178,10 @@ def object_detection(
             class_name_lists.append(datasets[dataset_name])
 
     result = []
-    for YOLO11_path, class_name_list in zip(yolo_paths, class_name_lists):
+    for yolo26_path, class_name_list in zip(yolo_paths, class_name_lists):
         result.extend(
             YOLO_process(
-                YOLO11_path, conf_threshold, iou_threshold, image, class_name_list
+                yolo26_path, conf_threshold, image, class_name_list
             )
         )
 
@@ -194,7 +199,6 @@ class ObjectDetectionWorker(QObject):
         object_detection_model: str,
         object_detection_dataset: list[str],
         object_detection_conf_threshold: float,
-        object_detection_iou_threshold: float,
         **kwargs,
     ):
         super(ObjectDetectionWorker, self).__init__()
@@ -202,7 +206,6 @@ class ObjectDetectionWorker(QObject):
         self.model = object_detection_model
         self.dataset = object_detection_dataset
         self.conf_threshold = object_detection_conf_threshold
-        self.iou_threshold = object_detection_iou_threshold
         self.kwargs = kwargs
 
     def run(self):
@@ -212,7 +215,6 @@ class ObjectDetectionWorker(QObject):
                 self.model,
                 self.dataset,
                 self.conf_threshold,
-                self.iou_threshold,
             )
             self.result.emit(results)
             self.finished.emit()
@@ -226,16 +228,15 @@ class ObjectDetectionWorker(QObject):
         model: str,
         dataset: list[str],
         conf_threshold: float = 0.7,
-        iou_threshold: float = 0.5,
     ):
         yolo_path = []
         class_name_list_list = []
         model_paths = {
-            "YOLO11n": ["yolo11n.onnx"],
-            "YOLO11s": ["yolo11s.onnx"],
-            "YOLO11m": ["yolo11m.onnx"],
-            "YOLO11l": ["yolo11l.onnx"],
-            "YOLO11x": ["yolo11x.onnx"],
+            "yolo26n": ["yolo26n.onnx"],
+            "yolo26s": ["yolo26s.onnx"],
+            "yolo26m": ["yolo26m.onnx"],
+            "yolo26l": ["yolo26l.onnx"],
+            "yolo26x": ["yolo26x.onnx"],
         }
         datasets = {
             "COCO": coco,
@@ -251,8 +252,8 @@ class ObjectDetectionWorker(QObject):
 
         results = []
         yolo_list = []
-        for i, YOLO11_path in enumerate(yolo_path):
-            yolo_list.append(YOLO11(YOLO11_path, conf_threshold, iou_threshold))
+        for i, yolo26_path in enumerate(yolo_path):
+            yolo_list.append(YOLO26(yolo26_path, conf_threshold))
 
         total_images = self.kwargs["total_files"]
         finished_files = self.kwargs["finished_files"]
@@ -267,7 +268,14 @@ class ObjectDetectionWorker(QObject):
                 _, scores, class_ids = yolo(image)
                 if len(class_ids) == 0:
                     continue
-                class_names = [class_name_list[class_id] for class_id in class_ids]
+                try:
+                    class_names = [class_name_list[class_id] for class_id in class_ids]
+                except IndexError as e:
+                    logging.error(
+                        f"Image Index:{i}, class_ids:{class_ids}, Object Detection failed. Error:{e}",
+                        exc_info=True,
+                    )
+                    continue
                 result.extend(
                     [
                         (class_name, scores[class_names.index(class_name)])
@@ -346,12 +354,11 @@ class OCRWorker(QObject):
 # %%
 def read_img(
     img_path: Path,
-    classification_model="YOLO11n",
+    classification_model="yolo26n",
     classification_threshold=0.7,
-    object_detection_model="YOLO11n",
+    object_detection_model="yolo26n",
     object_detection_dataset=["COCO"],
     object_detection_conf_threshold=0.7,
-    object_detection_iou_threshold=0.5,
     OCR_model="RapidOCR",
     **kwargs,
 ):
@@ -391,7 +398,6 @@ def read_img(
                 object_detection_model,
                 object_detection_dataset,
                 object_detection_conf_threshold,
-                object_detection_iou_threshold,
             )
             res_dict["object_detection"] = obj_res
 
@@ -651,4 +657,5 @@ class HashReadWorker(QObject):
             self.finished.emit()
         except Exception as e:
             logging.error(e, exc_info=True)
+            self.finished.emit()
             self.finished.emit()

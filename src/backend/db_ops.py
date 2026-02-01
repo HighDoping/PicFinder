@@ -26,7 +26,6 @@ CREATE TABLE IF NOT EXISTS history (
     object_detection_model TEXT,
     object_detection_dataset TEXT,
     object_detection_confidence REAL,
-    object_detection_iou REAL,
     OCR_model TEXT,
     Full_update BOOLEAN,
     indexed_at INTEGER DEFAULT (strftime('%s', 'now'))
@@ -87,8 +86,8 @@ DELETE FROM pictures WHERE path = ?;
 """
 
 HISTORY_INSERT_SQL = """
-INSERT INTO history (classification_model, classification_threshold, object_detection_model,object_detection_dataset, object_detection_confidence, object_detection_iou, OCR_model, Full_update)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+INSERT INTO history (classification_model, classification_threshold, object_detection_model,object_detection_dataset, object_detection_confidence, OCR_model, Full_update)
+VALUES (?, ?, ?, ?, ?, ?, ?);
 """
 
 RETURN_ALL_SQL = """
@@ -159,7 +158,6 @@ class DB:
         object_detection_model,
         object_detection_dataset,
         object_detection_confidence,
-        object_detection_iou,
         OCR_model,
         full_update,
     ):
@@ -172,7 +170,6 @@ class DB:
                 object_detection_model,
                 object_detection_dataset,
                 object_detection_confidence,
-                object_detection_iou,
                 OCR_model,
                 full_update,
             ),

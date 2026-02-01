@@ -3,7 +3,7 @@
 ################################################################################
 ## Form generated from reading UI file 'MainWindow.ui'
 ##
-## Created by: Qt User Interface Compiler version 6.7.0
+## Created by: Qt User Interface Compiler version 6.10.0
 ##
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
@@ -27,13 +27,17 @@ class Ui_MainWindow(object):
             MainWindow.setObjectName(u"MainWindow")
         MainWindow.resize(800, 600)
         icon = QIcon()
-        icon.addFile(u"icon.ico", QSize(), QIcon.Normal, QIcon.Off)
+        icon.addFile(u"icon.ico", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
         MainWindow.setWindowIcon(icon)
         MainWindow.setLocale(QLocale(QLocale.English, QLocale.UnitedStates))
         self.actionPreference = QAction(MainWindow)
         self.actionPreference.setObjectName(u"actionPreference")
         self.actionClear_DB = QAction(MainWindow)
         self.actionClear_DB.setObjectName(u"actionClear_DB")
+        self.actionAbout = QAction(MainWindow)
+        self.actionAbout.setObjectName(u"actionAbout")
+        self.actionSettings = QAction(MainWindow)
+        self.actionSettings.setObjectName(u"actionSettings")
         self.centralwidget = QWidget(MainWindow)
         self.centralwidget.setObjectName(u"centralwidget")
         self.verticalLayout = QVBoxLayout(self.centralwidget)
@@ -94,17 +98,25 @@ class Ui_MainWindow(object):
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QMenuBar(MainWindow)
         self.menubar.setObjectName(u"menubar")
-        self.menubar.setGeometry(QRect(0, 0, 800, 21))
+        self.menubar.setGeometry(QRect(0, 0, 800, 22))
         self.menuFile = QMenu(self.menubar)
         self.menuFile.setObjectName(u"menuFile")
         self.menuFile.setLocale(QLocale(QLocale.English, QLocale.UnitedStates))
+        self.menuSettings = QMenu(self.menubar)
+        self.menuSettings.setObjectName(u"menuSettings")
+        self.menuAbout = QMenu(self.menubar)
+        self.menuAbout.setObjectName(u"menuAbout")
         MainWindow.setMenuBar(self.menubar)
         self.statusbar = QStatusBar(MainWindow)
         self.statusbar.setObjectName(u"statusbar")
         MainWindow.setStatusBar(self.statusbar)
 
         self.menubar.addAction(self.menuFile.menuAction())
+        self.menubar.addAction(self.menuSettings.menuAction())
+        self.menubar.addAction(self.menuAbout.menuAction())
         self.menuFile.addAction(self.actionClear_DB)
+        self.menuSettings.addAction(self.actionSettings)
+        self.menuAbout.addAction(self.actionAbout)
 
         self.retranslateUi(MainWindow)
 
@@ -115,11 +127,14 @@ class Ui_MainWindow(object):
         MainWindow.setWindowTitle(QCoreApplication.translate("MainWindow", u"PicFinder", None))
         self.actionPreference.setText(QCoreApplication.translate("MainWindow", u"Preference", None))
         self.actionClear_DB.setText(QCoreApplication.translate("MainWindow", u"Clear Database", None))
+        self.actionAbout.setText(QCoreApplication.translate("MainWindow", u"About", None))
+        self.actionSettings.setText(QCoreApplication.translate("MainWindow", u"Settings", None))
         self.label_2.setText(QCoreApplication.translate("MainWindow", u"Folder:", None))
         self.pushButton_folder_browse.setText(QCoreApplication.translate("MainWindow", u"Browse", None))
         self.pushButton_index.setText(QCoreApplication.translate("MainWindow", u"Index", None))
         self.label.setText(QCoreApplication.translate("MainWindow", u"Search:", None))
         self.pushButton_search.setText(QCoreApplication.translate("MainWindow", u"Search", None))
         self.menuFile.setTitle(QCoreApplication.translate("MainWindow", u"File", None))
+        self.menuSettings.setTitle(QCoreApplication.translate("MainWindow", u"Settings", None))
+        self.menuAbout.setTitle(QCoreApplication.translate("MainWindow", u"About", None))
     # retranslateUi
-

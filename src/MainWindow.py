@@ -199,22 +199,19 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         settings = QSettings("HAL9000COM", "PicFinder")
         self.settings = {}
         self.settings["classification_model"] = settings.value(
-            "classification_model", "YOLO11n"
+            "classification_model", "yolo26n"
         )
         self.settings["classification_threshold"] = float(
             settings.value("classification_threshold", 0.7)
         )
         self.settings["object_detection_model"] = settings.value(
-            "object_detection_model", "YOLO11n"
+            "object_detection_model", "yolo26n"
         )
         self.settings["object_detection_dataset"] = settings.value(
             "object_detection_dataset", ["COCO"]
         )
         self.settings["object_detection_conf_threshold"] = float(
             settings.value("object_detection_conf_threshold", 0.7)
-        )
-        self.settings["object_detection_iou_threshold"] = float(
-            settings.value("object_detection_iou_threshold", 0.5)
         )
         self.settings["OCR_model"] = settings.value("OCR_model", "RapidOCR")
         self.settings["FullUpdate"] = settings.value("FullUpdate", False, type=bool)

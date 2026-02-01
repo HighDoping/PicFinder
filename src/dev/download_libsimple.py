@@ -11,9 +11,9 @@ import requests
 def download_libsimple():
     # Dictionary containing the target libraries and their download URLs
     url_dict = {
-        "libsimple-osx-x64": "https://github.com/wangfenjin/simple/releases/download/v0.5.0/libsimple-osx-x64.zip",
-        "libsimple-linux-ubuntu-latest": "https://github.com/wangfenjin/simple/releases/download/v0.5.0/libsimple-linux-ubuntu-latest.zip",
-        "libsimple-windows-x64": "https://github.com/wangfenjin/simple/releases/download/v0.5.0/libsimple-windows-x64.zip",
+        "libsimple-osx-x64": "https://github.com/wangfenjin/simple/releases/download/v0.5.2/libsimple-osx-x64.zip",
+        "libsimple-linux-ubuntu-latest": "https://github.com/wangfenjin/simple/releases/download/v0.5.2/libsimple-linux-ubuntu-latest.zip",
+        "libsimple-windows-x64": "https://github.com/wangfenjin/simple/releases/download/v0.5.2/libsimple-windows-x64.zip",
     }
     # get platform and architecture
     if sys.platform.startswith("win"):

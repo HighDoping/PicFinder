@@ -79,7 +79,7 @@ class SettingsWindow(QWidget, Ui_Settings):
         self.checkBox_update.setChecked(
             self.settings.value("FullUpdate", False, type=bool)
         )
-        self.spinBox_batch_size.setValue(int(self.settings.value("batch_size", 100)))
+        
         self.checkBox_load_all.setChecked(
             self.settings.value("load_all", False, type=bool)
         )
@@ -107,7 +107,7 @@ class SettingsWindow(QWidget, Ui_Settings):
         self.settings.setValue("OCR_model", self.comboBox_OCR_model.currentText())
         self.settings.setValue("OCR_parallel", self.spinBox_OCR_parallel.value())
         self.settings.setValue("FullUpdate", self.checkBox_update.isChecked())
-        self.settings.setValue("batch_size", self.spinBox_batch_size.value())
+        
         self.settings.setValue("load_all", self.checkBox_load_all.isChecked())
 
     def gui_save(self):

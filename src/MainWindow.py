@@ -46,6 +46,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         super(MainWindow, self).__init__()
         self.setupUi(self)
         self.setAcceptDrops(True)
+        
+        self.progressBar.setVisible(False)
 
         q_log_signal = QLogSignal()
         h = QLogHandler(q_log_signal)
@@ -141,14 +143,18 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.index_worker.progress.connect(self.index_progress)
             self.index_worker_thread.start()
             self.statusbar.showMessage("Indexing...")
+            self.progressBar.setVisible(True)
         else:
             self.statusbar.showMessage("Invalid Folder Path")
 
-    def index_progress(self, value):
-        self.statusbar.showMessage(f"Indexing... {value}")
+    def index_progress(self, value, total):
+        self.progressBar.setMaximum(total)
+        self.progressBar.setValue(value)
+        self.statusbar.showMessage(f"Indexing... {value}/{total}")
 
     def index_finished(self):
         self.statusbar.showMessage("Indexing Finished")
+        self.progressBar.setVisible(False)
         self.db_exists_check()
 
     def search(self):
@@ -216,7 +222,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.settings["OCR_model"] = settings.value("OCR_model", "RapidOCR")
         self.settings["OCR_parallel"] = settings.value("OCR_parallel", 3)
         self.settings["FullUpdate"] = settings.value("FullUpdate", False, type=bool)
-        self.settings["batch_size"] = int(settings.value("batch_size", 100))
         self.settings["load_all"] = settings.value("load_all", False)
 
     def open_about(self):

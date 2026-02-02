@@ -18,8 +18,8 @@ from PySide6.QtGui import (QAction, QBrush, QColor, QConicalGradient,
     QTransform)
 from PySide6.QtWidgets import (QApplication, QFrame, QHBoxLayout, QLabel,
     QLineEdit, QMainWindow, QMenu, QMenuBar,
-    QPushButton, QSizePolicy, QStatusBar, QVBoxLayout,
-    QWidget)
+    QProgressBar, QPushButton, QSizePolicy, QStatusBar,
+    QVBoxLayout, QWidget)
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
@@ -58,6 +58,12 @@ class Ui_MainWindow(object):
         self.pushButton_folder_browse.setObjectName(u"pushButton_folder_browse")
 
         self.horizontalLayout.addWidget(self.pushButton_folder_browse)
+
+        self.progressBar = QProgressBar(self.centralwidget)
+        self.progressBar.setObjectName(u"progressBar")
+        self.progressBar.setValue(0)
+
+        self.horizontalLayout.addWidget(self.progressBar)
 
         self.pushButton_index = QPushButton(self.centralwidget)
         self.pushButton_index.setObjectName(u"pushButton_index")

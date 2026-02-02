@@ -1,14 +1,16 @@
 # -*- coding: utf-8 -*-
+import argparse
+import logging
 import os
 import sys
 import tempfile
-import argparse
-import logging
 from multiprocessing import freeze_support
+
 
 def main_gui():
     from PySide6.QtGui import QIcon
     from PySide6.QtWidgets import QApplication
+
     from MainWindow import MainWindow
 
     app = QApplication.instance()

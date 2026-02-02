@@ -171,24 +171,6 @@ class Ui_Settings(object):
 
         self.horizontalLayout_10.addWidget(self.checkBox_update)
 
-        self.horizontalLayout = QHBoxLayout()
-        self.horizontalLayout.setObjectName(u"horizontalLayout")
-        self.label_7 = QLabel(self.groupBox_5)
-        self.label_7.setObjectName(u"label_7")
-
-        self.horizontalLayout.addWidget(self.label_7)
-
-        self.spinBox_batch_size = QSpinBox(self.groupBox_5)
-        self.spinBox_batch_size.setObjectName(u"spinBox_batch_size")
-        self.spinBox_batch_size.setMinimum(1)
-        self.spinBox_batch_size.setMaximum(10000)
-        self.spinBox_batch_size.setValue(100)
-
-        self.horizontalLayout.addWidget(self.spinBox_batch_size)
-
-
-        self.horizontalLayout_10.addLayout(self.horizontalLayout)
-
 
         self.verticalLayout_5.addLayout(self.horizontalLayout_10)
 
@@ -239,7 +221,6 @@ class Ui_Settings(object):
         self.label_6.setText(QCoreApplication.translate("Settings", u"Parallel:", None))
         self.groupBox_5.setTitle(QCoreApplication.translate("Settings", u"Index Setting", None))
         self.checkBox_update.setText(QCoreApplication.translate("Settings", u"Fully Update Database", None))
-        self.label_7.setText(QCoreApplication.translate("Settings", u"Batch Size:", None))
         self.groupBox_6.setTitle(QCoreApplication.translate("Settings", u"Search Setting", None))
         self.checkBox_load_all.setText(QCoreApplication.translate("Settings", u"Load Images when start up", None))
         self.pushButton_save.setText(QCoreApplication.translate("Settings", u"Save", None))

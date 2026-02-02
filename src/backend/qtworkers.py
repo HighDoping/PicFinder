@@ -2,13 +2,12 @@
 
 import hashlib
 import logging
-import sys
 from pathlib import Path
 
-from PySide6.QtCore import QObject, QThread, Signal
+from PySide6.QtCore import QObject, Signal
 
 from backend.db_ops import DB
-from backend.image_process import ReadImgWorker
+from backend.image_process import ImageProcessor
 
 
 class SearchWorker(QObject):
@@ -34,15 +33,14 @@ class SearchWorker(QObject):
 
 class IndexWorker(QObject):
     finished = Signal()
-    progress = Signal(str)
+    progress = Signal(int, int)
 
     def __init__(self, folder_path: Path, **kwargs):
         super(IndexWorker, self).__init__()
         self.folder = folder_path
         self.kwargs = kwargs
-
-        self.batch_size = kwargs["batch_size"]
-        self.index = 0
+        self.stopped = False
+        self.processor = ImageProcessor(**self.kwargs)
 
     def run(self):
         try:
@@ -62,58 +60,33 @@ class IndexWorker(QObject):
             )
 
             self.read_folder(self.folder)
+
+            self.full_finished()
+
         except Exception as e:
             logging.error(e, exc_info=True)
             self.finished.emit()
 
     def read_folder(self, folder_path: Path):
-
         self.remove_deleted_files(folder_path)
         file_list = self.sync_file_list(folder_path)
-        # from generator to list
         self.file_list = list(file_list)
         self.total_files = len(self.file_list)
-        self.kwargs["total_files"] = self.total_files
-
         logging.info(f"Indexing {self.total_files} files")
 
-        self.kwargs["finished_files"] = self.index
+        for index, file in enumerate(self.file_list):
+            if self.stopped:
+                break
+            self.progress.emit(index, self.total_files)
 
-        self.run_img_worker(
-            self.file_list[self.index : self.index + self.batch_size], **self.kwargs
-        )
+            # Use the pre-initialized processor
+            if self.processor:
+                result = self.processor.process_image(file)
+                self.save_to_db(result)
+            else:
+                logging.error("ImageProcessor not initialized")
 
-    def run_img_worker(self, file_list: list, **kwargs):
-
-        self.read_img_worker = ReadImgWorker(file_list, **kwargs)
-        self.read_img_worker_thread = QThread()
-        self.read_img_worker.moveToThread(self.read_img_worker_thread)
-        self.read_img_worker_thread.started.connect(self.read_img_worker.run)
-        self.read_img_worker.progress.connect(self.progress_process)
-        self.read_img_worker.results.connect(self.read_folder_results)
-        self.read_img_worker.finished.connect(self.img_worker_finished)
-        self.read_img_worker.finished.connect(self.read_img_worker_thread.quit)
-        self.read_img_worker.finished.connect(self.read_img_worker.deleteLater)
-        self.read_img_worker_thread.finished.connect(
-            self.read_img_worker_thread.deleteLater
-        )
-        self.read_img_worker_thread.start()
-
-    def img_worker_finished(self):
-        self.read_img_worker_thread.quit()
-        self.read_img_worker_thread.wait()
-
-        if self.index < self.total_files:
-            self.index += self.batch_size
-            self.kwargs["finished_files"] = self.index
-            batch = self.file_list[self.index : self.index + self.batch_size]
-            self.run_img_worker(batch, **self.kwargs)
-        else:
-            self.full_finished()
-
-    def read_folder_results(self, results: list):
-        for result in results:
-            self.save_to_db(result)
+        self.progress.emit(self.total_files, self.total_files)
 
     def save_to_db(self, result: dict):
 
@@ -152,14 +125,10 @@ class IndexWorker(QObject):
             OCR,
             ocr_confidence_avg,
         )
-        
+
     def full_finished(self):
         self.db.close()
         self.finished.emit()
-
-    def progress_process(self, progress):
-        logging.debug(f"Progress: {progress}")
-        self.progress.emit(progress)
 
     def sync_file_list(self, folder_path: Path):
         supported_suffix = [

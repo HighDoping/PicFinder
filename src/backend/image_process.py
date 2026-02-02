@@ -39,20 +39,37 @@ else:
     models_dir = Path(__file__).resolve().parent.parent / "models"
 
 
+def get_yolo_cls_model_path(model: str) -> Path | None:
+    model_paths = {
+        "yolo26n": "yolo26n-cls.onnx",
+        "yolo26s": "yolo26s-cls.onnx",
+        "yolo26m": "yolo26m-cls.onnx",
+        "yolo26l": "yolo26l-cls.onnx",
+        "yolo26x": "yolo26x-cls.onnx",
+    }
+    if model in model_paths:
+        return models_dir / model_paths[model]
+    return None
+
+
+def get_yolo_model_path(model: str) -> Path | None:
+    model_paths = {
+        "yolo26n": "yolo26n.onnx",
+        "yolo26s": "yolo26s.onnx",
+        "yolo26m": "yolo26m.onnx",
+        "yolo26l": "yolo26l.onnx",
+        "yolo26x": "yolo26x.onnx",
+    }
+    if model in model_paths:
+        return models_dir / model_paths[model]
+    return None
+
+
 def classify(image: np.ndarray, model: str, threshold: float = 0.7):
-    match model:
-        case "yolo26n":
-            yolo26_path = models_dir / "yolo26n-cls.onnx"
-        case "yolo26s":
-            yolo26_path = models_dir / "yolo26s-cls.onnx"
-        case "yolo26m":
-            yolo26_path = models_dir / "yolo26m-cls.onnx"
-        case "yolo26l":
-            yolo26_path = models_dir / "yolo26l-cls.onnx"
-        case "yolo26x":
-            yolo26_path = models_dir / "yolo26x-cls.onnx"
-        case _:
-            return []
+    yolo26_path = get_yolo_cls_model_path(model)
+    if not yolo26_path:
+        return []
+
     yolo_cls = YOLO26Cls(yolo26_path, conf_thres=threshold)
     class_ids, confidence = yolo_cls(image)
     if len(class_ids) == 0:
@@ -95,19 +112,9 @@ class ClassificationWorker(QObject):
     def classify_batch(
         self, images: list[np.ndarray], model: str, threshold: float = 0.7
     ):
-        match model:
-            case "yolo26n":
-                yolo26_path = models_dir / "yolo26n-cls.onnx"
-            case "yolo26s":
-                yolo26_path = models_dir / "yolo26s-cls.onnx"
-            case "yolo26m":
-                yolo26_path = models_dir / "yolo26m-cls.onnx"
-            case "yolo26l":
-                yolo26_path = models_dir / "yolo26l-cls.onnx"
-            case "yolo26x":
-                yolo26_path = models_dir / "yolo26x-cls.onnx"
-            case _:
-                return [[] for _ in images]
+        yolo26_path = get_yolo_cls_model_path(model)
+        if not yolo26_path:
+            return [[] for _ in images]
 
         yolo_cls = YOLO26Cls(yolo26_path, conf_thres=threshold)
 
@@ -142,9 +149,7 @@ def object_detection(
     conf_threshold: float = 0.7,
 ):
 
-    def YOLO_process(
-        yolo26_path, conf_threshold, image, class_name_list
-    ):
+    def YOLO_process(yolo26_path, conf_threshold, image, class_name_list):
         yolo = YOLO26(yolo26_path, conf_threshold)
         _, scores, class_ids = yolo(image)
         if not class_ids:
@@ -155,35 +160,25 @@ def object_detection(
             for class_name in class_names
         ]
 
-    model_paths = {
-        "yolo26n": ["yolo26n.onnx"],
-        "yolo26s": ["yolo26s.onnx"],
-        "yolo26m": ["yolo26m.onnx"],
-        "yolo26l": ["yolo26l.onnx"],
-        "yolo26x": ["yolo26x.onnx"],
-    }
+    yolo_path = get_yolo_model_path(model)
+    if not yolo_path:
+        return []
+
     datasets = {
         "COCO": coco,
     }
-
-    if model not in model_paths:
-        return []
 
     yolo_paths = []
     class_name_lists = []
     for dataset_name in dataset:
         if dataset_name in datasets:
             if dataset_name == "COCO":
-                yolo_paths.append(models_dir / model_paths[model][0])
+                yolo_paths.append(yolo_path)
             class_name_lists.append(datasets[dataset_name])
 
     result = []
     for yolo26_path, class_name_list in zip(yolo_paths, class_name_lists):
-        result.extend(
-            YOLO_process(
-                yolo26_path, conf_threshold, image, class_name_list
-            )
-        )
+        result.extend(YOLO_process(yolo26_path, conf_threshold, image, class_name_list))
 
     return result
 
@@ -229,30 +224,24 @@ class ObjectDetectionWorker(QObject):
         dataset: list[str],
         conf_threshold: float = 0.7,
     ):
-        yolo_path = []
-        class_name_list_list = []
-        model_paths = {
-            "yolo26n": ["yolo26n.onnx"],
-            "yolo26s": ["yolo26s.onnx"],
-            "yolo26m": ["yolo26m.onnx"],
-            "yolo26l": ["yolo26l.onnx"],
-            "yolo26x": ["yolo26x.onnx"],
-        }
+        yolo_path = get_yolo_model_path(model)
+        if not yolo_path:
+            return [[] for _ in images]
+
         datasets = {
             "COCO": coco,
         }
 
-        if model in model_paths:
-            for dataset_name in dataset:
-                if dataset_name == "COCO":
-                    yolo_path.append(models_dir / model_paths[model][0])
-                    class_name_list_list.append(datasets[dataset_name])
-        else:
-            return [[] for _ in images]
+        yolo_paths = []
+        class_name_list_list = []
+        for dataset_name in dataset:
+            if dataset_name == "COCO":
+                yolo_paths.append(yolo_path)
+                class_name_list_list.append(datasets[dataset_name])
 
         results = []
         yolo_list = []
-        for i, yolo26_path in enumerate(yolo_path):
+        for i, yolo26_path in enumerate(yolo_paths):
             yolo_list.append(YOLO26(yolo26_path, conf_threshold))
 
         total_images = self.kwargs["total_files"]

@@ -20,6 +20,7 @@ dev = [
     "ultralytics>=8.4",
     "onnxslim>=0.1.71",
     "requests>=2.32.5",
+    "pytest>=9.0.2",
 ]
 
 [tool.uv]

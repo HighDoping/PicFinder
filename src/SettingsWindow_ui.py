@@ -138,19 +138,6 @@ class Ui_Settings(object):
 
         self.horizontalLayout_5.addWidget(self.comboBox_OCR_model)
 
-        self.label_6 = QLabel(self.groupBox_4)
-        self.label_6.setObjectName(u"label_6")
-
-        self.horizontalLayout_5.addWidget(self.label_6)
-
-        self.spinBox_parallel = QSpinBox(self.groupBox_4)
-        self.spinBox_parallel.setObjectName(u"spinBox_parallel")
-        self.spinBox_parallel.setMinimum(1)
-        self.spinBox_parallel.setMaximum(256)
-        self.spinBox_parallel.setValue(3)
-
-        self.horizontalLayout_5.addWidget(self.spinBox_parallel)
-
 
         self.verticalLayout.addLayout(self.horizontalLayout_5)
 
@@ -170,6 +157,19 @@ class Ui_Settings(object):
         self.checkBox_update.setObjectName(u"checkBox_update")
 
         self.horizontalLayout_10.addWidget(self.checkBox_update)
+
+        self.label_6 = QLabel(self.groupBox_5)
+        self.label_6.setObjectName(u"label_6")
+
+        self.horizontalLayout_10.addWidget(self.label_6)
+
+        self.spinBox_parallel = QSpinBox(self.groupBox_5)
+        self.spinBox_parallel.setObjectName(u"spinBox_parallel")
+        self.spinBox_parallel.setMinimum(1)
+        self.spinBox_parallel.setMaximum(256)
+        self.spinBox_parallel.setValue(3)
+
+        self.horizontalLayout_10.addWidget(self.spinBox_parallel)
 
 
         self.verticalLayout_5.addLayout(self.horizontalLayout_10)
@@ -218,9 +218,9 @@ class Ui_Settings(object):
         self.comboBox_OCR_model.setItemText(0, QCoreApplication.translate("Settings", u"RapidOCR", None))
         self.comboBox_OCR_model.setItemText(1, QCoreApplication.translate("Settings", u"None", None))
 
-        self.label_6.setText(QCoreApplication.translate("Settings", u"Parallel:", None))
         self.groupBox_5.setTitle(QCoreApplication.translate("Settings", u"Index Setting", None))
         self.checkBox_update.setText(QCoreApplication.translate("Settings", u"Fully Update Database", None))
+        self.label_6.setText(QCoreApplication.translate("Settings", u"Parallel:", None))
         self.groupBox_6.setTitle(QCoreApplication.translate("Settings", u"Search Setting", None))
         self.checkBox_load_all.setText(QCoreApplication.translate("Settings", u"Load Images when start up", None))
         self.pushButton_save.setText(QCoreApplication.translate("Settings", u"Save", None))

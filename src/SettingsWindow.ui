@@ -163,26 +163,6 @@
              </item>
             </widget>
            </item>
-           <item>
-            <widget class="QLabel" name="label_6">
-             <property name="text">
-              <string>Parallel:</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QSpinBox" name="spinBox_parallel">
-             <property name="minimum">
-              <number>1</number>
-             </property>
-             <property name="maximum">
-              <number>256</number>
-             </property>
-             <property name="value">
-              <number>3</number>
-             </property>
-            </widget>
-           </item>
           </layout>
          </item>
         </layout>
@@ -203,6 +183,26 @@
          <widget class="QCheckBox" name="checkBox_update">
           <property name="text">
            <string>Fully Update Database</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="label_6">
+          <property name="text">
+           <string>Parallel:</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QSpinBox" name="spinBox_parallel">
+          <property name="minimum">
+           <number>1</number>
+          </property>
+          <property name="maximum">
+           <number>256</number>
+          </property>
+          <property name="value">
+           <number>3</number>
           </property>
          </widget>
         </item>

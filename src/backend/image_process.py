@@ -2,6 +2,7 @@
 
 # -*- coding: utf-8 -*-
 
+import concurrent.futures
 import hashlib
 import logging
 import platform
@@ -25,10 +26,10 @@ rapidocr_params = {
     ),
     "Det.lang_type": rapidocr.LangDet.CH,
     "Det.model_type": rapidocr.ModelType.SERVER,
-    "Det.ocr_version": rapidocr.OCRVersion.PPOCRV4,
+    "Det.ocr_version": rapidocr.OCRVersion.PPOCRV5,
     "Rec.lang_type": rapidocr.LangRec.CH,
     "Rec.model_type": rapidocr.ModelType.SERVER,
-    "Rec.ocr_version": rapidocr.OCRVersion.PPOCRV4,
+    "Rec.ocr_version": rapidocr.OCRVersion.PPOCRV5,
 }
 
 is_nuitka = "__compiled__" in globals()
@@ -109,7 +110,7 @@ class ImageProcessor:
                     logging.info(f"Loaded Object Detection Model: {self.obj_model_name}")
                 except Exception as e:
                     logging.error(f"Failed to load object detection model: {e}")
-            
+
             # Pre-calculate dataset mappings
             self.obj_datasets_map = {}
             available_datasets = {"COCO": coco}
@@ -128,11 +129,11 @@ class ImageProcessor:
     def classify(self, image: np.ndarray):
         if not self.cls_net:
             return []
-        
+
         class_ids, confidence = self.cls_net(image)
         if len(class_ids) == 0:
             return []
-        
+
         class_names = [image_net[class_id][1] for class_id in class_ids]
         result = [
             (class_name, confidence[class_names.index(class_name)])
@@ -154,15 +155,15 @@ class ImageProcessor:
         for _, class_name_list in self.obj_datasets_map.items():
             # Filter IDs that exist in this dataset list
             # Note: This logic assumes the model output IDs correspond to the index in the dataset list provided
-            # Standard YOLO output usually matches COCO indices. 
-            
+            # Standard YOLO output usually matches COCO indices.
+
             valid_entries = []
             for i, class_id in enumerate(class_ids):
                 if class_id < len(class_name_list):
                     name = class_name_list[class_id]
                     score = scores[i]
                     valid_entries.append((name, score))
-            
+
             result.extend(valid_entries)
 
         return result
@@ -170,7 +171,7 @@ class ImageProcessor:
     def ocr(self, image: np.ndarray):
         if not self.ocr_engine:
             return []
-        
+
         result = self.ocr_engine(image, use_det=True, use_cls=True, use_rec=True)
         if result is None or len(result) == 0:
             return []
@@ -193,23 +194,50 @@ class ImageProcessor:
                 "path": img_path.as_posix()
             }
 
-            # Classification
-            if self.cls_net:
-                cls_start = time.perf_counter()
-                res_dict["classification"] = self.classify(img)
-                logging.debug(f"Img:{img_path.name}, Cls Time: {time.perf_counter() - cls_start:.4f}s")
+            def run_cls():
+                if self.cls_net:
+                    t0 = time.perf_counter()
+                    res = self.classify(img)
+                    t1 = time.perf_counter()
+                    logging.debug(f"Img:{img_path.name}, Cls Time: {t1 - t0:.4f}s")
+                    return "classification", res
+                return "classification", None
 
-            # Object Detection
-            if self.obj_net:
-                obj_start = time.perf_counter()
-                res_dict["object_detection"] = self.object_detection(img)
-                logging.debug(f"Img:{img_path.name}, Obj Time: {time.perf_counter() - obj_start:.4f}s")
+            def run_obj():
+                if self.obj_net:
+                    t0 = time.perf_counter()
+                    res = self.object_detection(img)
+                    t1 = time.perf_counter()
+                    logging.debug(f"Img:{img_path.name}, Obj Time: {t1 - t0:.4f}s")
+                    return "object_detection", res
+                return "object_detection", None
 
-            # OCR
-            if self.ocr_engine:
-                ocr_start = time.perf_counter()
-                res_dict["OCR"] = self.ocr(img)
-                logging.debug(f"Img:{img_path.name}, OCR Time: {time.perf_counter() - ocr_start:.4f}s")
+            def run_ocr():
+                if self.ocr_engine:
+                    t0 = time.perf_counter()
+                    res = self.ocr(img)
+                    t1 = time.perf_counter()
+                    logging.debug(f"Img:{img_path.name}, OCR Time: {t1 - t0:.4f}s")
+                    return "OCR", res
+                return "OCR", None
+
+            # Execute in parallel using a ThreadPool
+            # We use 3 workers since there are 3 distinct tasks
+            with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
+                futures = [
+                    executor.submit(run_cls),
+                    executor.submit(run_obj),
+                    executor.submit(run_ocr)
+                ]
+                
+                # Wait for all to complete and collect results
+                for future in concurrent.futures.as_completed(futures):
+                    try:
+                        key, result = future.result()
+                        if result is not None:
+                            res_dict[key] = result
+                    except Exception as e:
+                        logging.error(f"Error in parallel task: {e}")
 
             return res_dict
 

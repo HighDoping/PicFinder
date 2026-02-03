@@ -8,3 +8,4 @@ main.dist/
 src/backend/libsimple/
 src/installer_dist/
 tests/images
+*.pt

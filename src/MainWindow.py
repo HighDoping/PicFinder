@@ -220,7 +220,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             settings.value("object_detection_conf_threshold", 0.7)
         )
         self.settings["OCR_model"] = settings.value("OCR_model", "RapidOCR")
-        self.settings["OCR_parallel"] = settings.value("OCR_parallel", 3)
+        self.settings["parallel"] = settings.value("parallel", 3)
         self.settings["FullUpdate"] = settings.value("FullUpdate", False, type=bool)
         self.settings["load_all"] = settings.value("load_all", False)
 

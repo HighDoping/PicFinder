@@ -143,13 +143,13 @@ class Ui_Settings(object):
 
         self.horizontalLayout_5.addWidget(self.label_6)
 
-        self.spinBox_OCR_parallel = QSpinBox(self.groupBox_4)
-        self.spinBox_OCR_parallel.setObjectName(u"spinBox_OCR_parallel")
-        self.spinBox_OCR_parallel.setMinimum(1)
-        self.spinBox_OCR_parallel.setMaximum(256)
-        self.spinBox_OCR_parallel.setValue(3)
+        self.spinBox_parallel = QSpinBox(self.groupBox_4)
+        self.spinBox_parallel.setObjectName(u"spinBox_parallel")
+        self.spinBox_parallel.setMinimum(1)
+        self.spinBox_parallel.setMaximum(256)
+        self.spinBox_parallel.setValue(3)
 
-        self.horizontalLayout_5.addWidget(self.spinBox_OCR_parallel)
+        self.horizontalLayout_5.addWidget(self.spinBox_parallel)
 
 
         self.verticalLayout.addLayout(self.horizontalLayout_5)

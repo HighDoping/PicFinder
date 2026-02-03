@@ -74,7 +74,7 @@ class SettingsWindow(QWidget, Ui_Settings):
         self.comboBox_OCR_model.setCurrentText(
             self.settings.value("OCR_model", "RapidOCR")
         )
-        self.spinBox_OCR_parallel.setValue(int(self.settings.value("OCR_parallel", 3)))
+        self.spinBox_parallel.setValue(int(self.settings.value("parallel", 3)))
 
         self.checkBox_update.setChecked(
             self.settings.value("FullUpdate", False, type=bool)
@@ -105,7 +105,7 @@ class SettingsWindow(QWidget, Ui_Settings):
             self.doubleSpinBox_object_detection_confidence.value(),
         )
         self.settings.setValue("OCR_model", self.comboBox_OCR_model.currentText())
-        self.settings.setValue("OCR_parallel", self.spinBox_OCR_parallel.value())
+        self.settings.setValue("parallel", self.spinBox_parallel.value())
         self.settings.setValue("FullUpdate", self.checkBox_update.isChecked())
         
         self.settings.setValue("load_all", self.checkBox_load_all.isChecked())

@@ -2,6 +2,7 @@
 
 import hashlib
 import logging
+from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
 from pathlib import Path
 
 from PySide6.QtCore import QObject, Signal
@@ -41,6 +42,7 @@ class IndexWorker(QObject):
         self.kwargs = kwargs
         self.stopped = False
         self.processor = ImageProcessor(**self.kwargs)
+        self.parallel_workers = self.kwargs.get("parallel", 1)
 
     def run(self):
         try:
@@ -74,18 +76,56 @@ class IndexWorker(QObject):
         self.total_files = len(self.file_list)
         logging.info(f"Indexing {self.total_files} files")
 
-        for index, file in enumerate(self.file_list):
-            if self.stopped:
-                break
-            self.progress.emit(index, self.total_files)
+        if not self.processor:
+            logging.error("ImageProcessor not initialized")
+            return
 
-            # Use the pre-initialized processor
-            if self.processor:
-                result = self.processor.process_image(file)
-                self.save_to_db(result)
-            else:
-                logging.error("ImageProcessor not initialized")
+        pending_futures = set()
+        processed_count = 0
 
+        # Create the thread pool
+        with ThreadPoolExecutor(max_workers=self.parallel_workers) as executor:
+            for file in self.file_list:
+                if self.stopped:
+                    break
+
+                # 1. Submit a new task
+                future = executor.submit(self.processor.process_image, file)
+                pending_futures.add(future)
+
+                # 2. If pool is full, wait for at least one to finish
+                if len(pending_futures) >= self.parallel_workers:
+                    # Blocks until at least one future is done
+                    done, pending_futures = wait(
+                        pending_futures, return_when=FIRST_COMPLETED
+                    )
+
+                    # Process the results of the finished tasks
+                    for f in done:
+                        try:
+                            result = f.result()
+                            self.save_to_db(result)
+                        except Exception as e:
+                            logging.error(f"Worker exception: {e}")
+
+                        processed_count += 1
+                        self.progress.emit(processed_count, self.total_files)
+
+            # 3. Process any remaining tasks after the loop finishes (or if stopped)
+            for f in pending_futures:
+                if self.stopped:
+                    f.cancel()
+                    continue
+                try:
+                    result = f.result()
+                    self.save_to_db(result)
+                except Exception as e:
+                    logging.error(f"Worker exception: {e}")
+
+                processed_count += 1
+                self.progress.emit(processed_count, self.total_files)
+
+        logging.info("Indexing completed")
         self.progress.emit(self.total_files, self.total_files)
 
     def save_to_db(self, result: dict):

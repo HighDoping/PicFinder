@@ -38,7 +38,7 @@ def download_libsimple():
             with zipfile.ZipFile("libsimple.zip", "r") as zip_ref:
                 zip_ref.extractall("libsimple")
             os.remove("libsimple.zip")
-            dest_path = Path("../backend/libsimple") / lib_dir_name
+            dest_path = Path(__file__).parent.parent / "backend" / "libsimple" / lib_dir_name
             if dest_path.exists():
                 shutil.rmtree(dest_path)
             shutil.move(Path("libsimple") / lib_dir_name, dest_path)

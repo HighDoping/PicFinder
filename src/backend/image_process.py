@@ -137,7 +137,7 @@ class ImageProcessor:
 
         class_names = [image_net[class_id][1] for class_id in class_ids]
         result = [
-            (class_name, confidence[class_names.index(class_name)])
+            (class_name, float(confidence[class_names.index(class_name)]))
             for class_name in class_names
         ]
         return result
@@ -162,7 +162,7 @@ class ImageProcessor:
             for i, class_id in enumerate(class_ids):
                 if class_id < len(class_name_list):
                     name = class_name_list[class_id]
-                    score = scores[i]
+                    score = float(scores[i])
                     valid_entries.append((name, score))
 
             result.extend(valid_entries)
@@ -232,7 +232,7 @@ class ImageProcessor:
                     executor.submit(run_obj),
                     executor.submit(run_ocr)
                 ]
-                
+
                 # Wait for all to complete and collect results
                 for future in concurrent.futures.as_completed(futures):
                     try:

@@ -9,6 +9,7 @@ dependencies = [
     "pyside6>=6.10.0",
     "onnxruntime>=1.23.2",
     "rapidocr>=3.6.0",
+    "imohash>=1.1.0",
 ]
 
 [dependency-groups]
@@ -16,15 +17,45 @@ dev = [
     "black>=24.3.0",
     "notebook>=6.5.3",
     "nuitka>=2.1.5",
-    "onnx==1.16.1",
+    "onnx>=1.17.0",
     "ultralytics>=8.4",
     "onnxslim>=0.1.71",
     "requests>=2.32.5",
     "pytest>=9.0.2",
+    # # PyTorch for Windows with CUDA 12.8
+    # "torch>=2.10.0; sys_platform == 'win32'",
+    # "torchvision; sys_platform == 'win32'",
+    # "torchaudio>=2.10.0; sys_platform == 'win32'",
+    # # PyTorch for Linux with CUDA 12.8
+    # "torch>=2.10.0; sys_platform == 'linux'",
+    # "torchvision; sys_platform == 'linux'",
+    # "torchaudio>=2.10.0; sys_platform == 'linux'",
+    # # PyTorch for macOS (CPU / MPS)
+    # "torch>=2.10.0; sys_platform == 'darwin' and platform_machine == 'arm64'",
+    # "torchvision; sys_platform == 'darwin' and platform_machine == 'arm64'",
+    # "torchaudio>=2.10.0; sys_platform == 'darwin' and platform_machine == 'arm64'",
 ]
+
+
 
 [tool.uv]
 package = false
+
+# [[tool.uv.index]]
+# name = "pytorch-cu128"
+# url = "https://download.pytorch.org/whl/cu128"
+# explicit = true
+
+# [tool.uv.sources]
+# torch = [
+#     { index = "pytorch-cu128", marker = "sys_platform == 'win32' or sys_platform == 'linux'" },
+# ]
+# torchvision = [
+#     { index = "pytorch-cu128", marker = "sys_platform == 'win32' or sys_platform == 'linux'" },
+# ]
+# torchaudio = [
+#     { index = "pytorch-cu128", marker = "sys_platform == 'win32' or sys_platform == 'linux'" },
+# ]
 
 [build-system]
 requires = ["hatchling"]

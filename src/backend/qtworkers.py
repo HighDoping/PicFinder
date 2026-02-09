@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import hashlib
+import imohash
 import logging
 from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
 from pathlib import Path
@@ -205,7 +206,7 @@ class IndexWorker(QObject):
                 else:
                     rel_path = file.relative_to(folder_path).as_posix()
                     if rel_path in existing_entries.keys():
-                        existing_hash = hashlib.md5(file.read_bytes()).hexdigest()
+                        existing_hash = imohash.hashfile(file,hexdigest=True)
                         if existing_hash == existing_entries[rel_path]:
                             continue
                         else:

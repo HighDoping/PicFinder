@@ -11,6 +11,7 @@ import time
 from pathlib import Path
 
 import cv2
+import imohash
 import numpy as np
 import rapidocr
 
@@ -179,13 +180,15 @@ class ImageProcessor:
 
     def process_image(self, img_path: Path):
         try:
-            with open(img_path, "rb") as file:
-                img_file = file.read()
-                img_hash = hashlib.md5(img_file).hexdigest()
+            img_hash = imohash.hashfile(img_path, hexdigest=True)
 
             try:
-                img = cv2.imread(img_path.as_posix())
-                assert isinstance(img, np.ndarray)
+                img_array = np.fromfile(str(img_path), dtype=np.uint8)
+                img = cv2.imdecode(
+                    img_array, cv2.IMREAD_UNCHANGED | cv2.IMREAD_ANYDEPTH
+                )
+                if img is None:
+                    return {"error": "OpenCV could not decode the image data."}
             except Exception as e:
                 return {"error": str(e)}
 

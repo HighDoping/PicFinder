@@ -119,27 +119,11 @@ class YOLO26Cls(YOLO26Base):
 
     def predict(self, image: np.ndarray):
         input_tensor = self.prepare_input(image)
-
-        # Specific normalization for Classification (ImageNet stats)
-        # Often required if exported from Ultralytics
-        mean = np.array([0.485, 0.456, 0.406]).reshape(1, 3, 1, 1).astype(np.float32)
-        std = np.array([0.229, 0.224, 0.225]).reshape(1, 3, 1, 1).astype(np.float32)
-        input_tensor = (input_tensor - mean) / std
-
         outputs = self.inference(input_tensor)
         return self.process_output(outputs)
 
     def process_output(self, output):
-        logits = np.squeeze(output[0])
-
-        # Apply softmax to get probabilities
-        exp_logits = np.exp(logits - np.max(logits))
-        probs = exp_logits / exp_logits.sum()
-
-        # Get classes above threshold
+        probs = np.squeeze(output[0])
         class_ids = np.where(probs > self.conf_threshold)[0]
-
-        # Sort by probability descending
         sorted_indices = class_ids[np.argsort(probs[class_ids])[::-1]]
-
         return sorted_indices, probs[sorted_indices]

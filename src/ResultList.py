@@ -91,6 +91,7 @@ class ResultListWidget(QWidget, Ui_ResultListWidget):
             file_object_confidence = file[6]
             file_ocr = file[7]
             file_ocr_confidence = file[8]
+            clip_similarity = file[10] if len(file) > 10 else None
 
             file_info = (
                 f"File: {file_path.as_posix()}\n"
@@ -98,6 +99,8 @@ class ResultListWidget(QWidget, Ui_ResultListWidget):
                 f"Object: {file_object} ({file_object_confidence:.2f})\n"
                 f"OCR: {file_ocr} ({file_ocr_confidence:.2f})"
             )
+            if clip_similarity is not None:
+                file_info += f"\nCLIP similarity: {clip_similarity:.4f}"
 
             item = QListWidgetItem()
             item.setIcon(QPixmap(file_path.as_posix()))

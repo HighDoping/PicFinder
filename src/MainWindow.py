@@ -46,7 +46,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         super(MainWindow, self).__init__()
         self.setupUi(self)
         self.setAcceptDrops(True)
-        
+
         self.progressBar.setVisible(False)
 
         q_log_signal = QLogSignal()
@@ -206,6 +206,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.settings_window = SettingsWindow()
         self.settings_window.setWindowTitle("Settings")
         self.settings_window.show()
+        self.settings_window.finished.connect(self.update_settings)
 
     def update_settings(self):
         settings = QSettings("HighDoping", "PicFinder")

@@ -10,8 +10,10 @@ The multilingual text encoder maps text from multiple languages into the same
 embedding space as the vision encoder, enabling cross-lingual image-text search.
 """
 
+import json
 import logging
 import re
+import struct
 import sys
 from pathlib import Path
 
@@ -26,6 +28,25 @@ if is_nuitka or getattr(sys, "frozen", False):
     models_dir = Path(sys.argv[0]).parent / "models"
 else:
     models_dir = Path(__file__).resolve().parent.parent / "models"
+
+
+def load_safetensors_tensor(path: Path, tensor_name: str) -> np.ndarray:
+    """Load one float32 tensor from a SafeTensors file without PyTorch."""
+    with path.open("rb") as model_file:
+        header_size = struct.unpack("<Q", model_file.read(8))[0]
+        header = json.loads(model_file.read(header_size))
+        tensor_info = header[tensor_name]
+
+        if tensor_info["dtype"] != "F32":
+            raise ValueError(
+                f"Expected F32 tensor {tensor_name}, got {tensor_info['dtype']}"
+            )
+
+        start, end = tensor_info["data_offsets"]
+        model_file.seek(8 + header_size + start)
+        data = model_file.read(end - start)
+
+    return np.frombuffer(data, dtype=np.float32).reshape(tensor_info["shape"])
 
 
 class CLIPModel:
@@ -50,6 +71,9 @@ class CLIPModel:
         self.model_name = model_name
         self.vision_model_path = models_dir / f"{model_name}-vision.onnx"
         self.text_model_path = models_dir / f"{model_name}-text.onnx"
+        self.text_projection_path = (
+            models_dir / f"{model_name}-text-projection.safetensors"
+        )
         self.tokenizer_path = models_dir / "clip-tokenizer.json"
 
         # Check if models exist
@@ -63,6 +87,12 @@ class CLIPModel:
             raise FileNotFoundError(
                 f"Text model not found: {self.text_model_path}\n"
                 f"Please run: python src/dev/download_clip.py"
+            )
+
+        if not self.text_projection_path.exists():
+            raise FileNotFoundError(
+                f"Text projection weights not found: {self.text_projection_path}\n"
+                f"Please run: python src/dev/download_clip.py --force"
             )
 
         # Initialize ONNX Runtime sessions
@@ -111,6 +141,29 @@ class CLIPModel:
 
         self.tokenizer = Tokenizer.from_file(str(tokenizer_json_path))
         logging.info("Loaded HuggingFace tokenizer for multilingual support")
+
+        # The exported text ONNX graph ends at the multilingual transformer's
+        # 768-D token embeddings.  Sentence Transformers then mean-pools those
+        # embeddings and applies 2_Dense, whose 768 -> 512 projection is what
+        # aligns text with CLIP ViT-B/32 image embeddings.
+        try:
+            self.text_projection_weight = load_safetensors_tensor(
+                self.text_projection_path, "linear.weight"
+            )
+            self.text_projection_bias = np.zeros(512, dtype=np.float32)
+        except (KeyError, OSError, struct.error, ValueError) as e:
+            raise RuntimeError(
+                f"Failed to load text projection weights: {self.text_projection_path}"
+            ) from e
+
+        if self.text_projection_weight.shape != (
+            512,
+            768,
+        ) or self.text_projection_bias.shape != (512,):
+            raise RuntimeError(
+                "Unexpected multilingual CLIP text projection shape: "
+                f"{self.text_projection_weight.shape}, {self.text_projection_bias.shape}"
+            )
 
         # CLIP preprocessing constants
         self.image_size = 224
@@ -162,6 +215,10 @@ class CLIPModel:
         Returns:
             Normalized embedding vector [512]
         """
+        logging.debug(
+            "CLIP vision inference input: shape=%s dtype=%s", image.shape, image.dtype
+        )
+
         # Preprocess image
         image_tensor = self.preprocess_image(image)
 
@@ -172,6 +229,12 @@ class CLIPModel:
         embedding = self.vision_session.run([output_name], {input_name: image_tensor})[
             0
         ]
+        logging.debug(
+            "CLIP vision inference output: name=%s shape=%s dtype=%s",
+            output_name,
+            embedding.shape,
+            embedding.dtype,
+        )
 
         # Normalize embedding (take pooler output if available)
         if len(embedding.shape) > 2:
@@ -182,6 +245,15 @@ class CLIPModel:
         norm = np.linalg.norm(embedding)
         if norm > 0:
             embedding = embedding / norm
+        else:
+            logging.warning("CLIP vision inference returned a zero-norm embedding")
+
+        logging.debug(
+            "CLIP vision embedding ready: shape=%s dtype=%s norm=%.6f",
+            embedding.shape,
+            embedding.dtype,
+            np.linalg.norm(embedding),
+        )
 
         return embedding
 
@@ -254,6 +326,12 @@ class CLIPModel:
                 )
                 embedding = sum_embeddings / sum_mask
 
+        # Apply the official Sentence Transformers 2_Dense projection.  Without
+        # this, text stays in the transformer's 768-D hidden space and cannot be
+        # compared to CLIP's 512-D image embedding space.
+        embedding = (
+            embedding @ self.text_projection_weight.T + self.text_projection_bias
+        )
         embedding = embedding.flatten()
         norm = np.linalg.norm(embedding)
         if norm > 0:

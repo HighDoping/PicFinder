@@ -102,31 +102,28 @@ SELECT * FROM pictures;
 # Vector table for CLIP embeddings
 VEC_TABLE_SQL = """
 CREATE VIRTUAL TABLE IF NOT EXISTS vec_pictures USING vec0(
-    embedding float[512]
+    embedding float[512],
+    +path TEXT
 );
 """
 
-# Delete existing embedding for a picture
+# `path` is the application-level unique key. sqlite-vec keeps an internal rowid,
+# but it is intentionally not used to relate vectors to pictures.
 DELETE_EMBEDDING_SQL = """
-DELETE FROM vec_pictures WHERE rowid = ?;
+DELETE FROM vec_pictures WHERE path = ?;
 """
 
-# Insert embedding for a picture
 INSERT_EMBEDDING_SQL = """
-INSERT INTO vec_pictures(rowid, embedding) VALUES (?, ?);
+INSERT INTO vec_pictures(embedding, path) VALUES (?, ?);
 """
 
-# Search by embedding similarity with threshold
+# Search by minimum cosine similarity.
 SEARCH_BY_EMBEDDING_SQL = """
-SELECT p.* FROM pictures p
-WHERE p.id IN (
-    SELECT rowid FROM vec_pictures
-    WHERE vec_distance_cosine(embedding, ?) < ?
-)
-ORDER BY vec_distance_cosine(
-    (SELECT embedding FROM vec_pictures WHERE rowid = p.id),
-    ?
-);
+SELECT p.*, 1.0 - vec_distance_cosine(v.embedding, ?) AS clip_similarity
+FROM pictures p
+JOIN vec_pictures v ON v.path = p.path
+WHERE 1.0 - vec_distance_cosine(v.embedding, ?) >= ?
+ORDER BY clip_similarity DESC;
 """
 
 # prepare for multi-platform
@@ -179,8 +176,18 @@ class DB:
         # Create vector table if extension is available
         if self.vec_available:
             try:
+                existing_columns = {
+                    row[1]
+                    for row in self.conn.execute("PRAGMA table_info(vec_pictures)")
+                }
+                if existing_columns and "path" not in existing_columns:
+                    logging.warning(
+                        "Migrating vector table to path-based keys; existing CLIP "
+                        "embeddings will be removed and recreated on the next full index"
+                    )
+                    self.conn.execute("DROP TABLE vec_pictures")
                 self.conn.execute(VEC_TABLE_SQL)
-                logging.debug("Vector table initialized")
+                logging.debug("Path-keyed vector table initialized")
             except Exception as e:
                 logging.error(f"Failed to create vector table: {e}")
                 self.vec_available = False
@@ -278,35 +285,76 @@ class DB:
             return result[0] if result else None
 
     def remove(self, path):
+        if self.vec_available:
+            self.conn.execute(DELETE_EMBEDDING_SQL, (path,))
         self.conn.execute(REMOVE_SQL, (path,))
         self.conn.commit()
 
-    def insert_embedding(self, picture_id: int, embedding: np.ndarray):
-        """Insert or update CLIP embedding for a picture."""
+    def insert_embedding(self, path: str, embedding: np.ndarray):
+        """Insert or replace a CLIP embedding, identified by picture path."""
         if not self.vec_available:
             logging.warning("Cannot insert embedding: sqlite-vec not available")
-            return
+            return False
+
+        if not path:
+            logging.error("Cannot insert embedding: picture path is empty")
+            return False
+        if not isinstance(embedding, np.ndarray):
+            logging.error(
+                "Cannot insert embedding for path %s: expected ndarray, got %s",
+                path,
+                type(embedding).__name__,
+            )
+            return False
+        if embedding.shape != (512,):
+            logging.error(
+                "Cannot insert embedding for path %s: expected shape (512,), got %s",
+                path,
+                embedding.shape,
+            )
+            return False
+        if not np.isfinite(embedding).all():
+            logging.error(
+                "Cannot insert embedding for path %s: embedding contains non-finite values",
+                path,
+            )
+            return False
 
         try:
             # sqlite-vec accepts numpy arrays directly
-            # First delete any existing embedding for this picture
-            self.conn.execute(DELETE_EMBEDDING_SQL, (picture_id,))
-            # Then insert the new embedding
+            # sqlite-vec auxiliary columns cannot declare a UNIQUE constraint, so
+            # replace by path explicitly before inserting the new vector.
+            self.conn.execute(DELETE_EMBEDDING_SQL, (path,))
+            logging.debug("Inserting embedding for path %s", path)
+            logging.debug(
+                f"Embedding shape: {embedding.shape}, dtype: {embedding.dtype}"
+            )
+            logging.debug(f"Embedding sample: {embedding[:5]}")  # Log first
             self.conn.execute(
-                INSERT_EMBEDDING_SQL, (picture_id, embedding.astype(np.float32))
+                INSERT_EMBEDDING_SQL, (embedding.astype(np.float32), path)
             )
             self.conn.commit()
+            logging.debug("Inserted CLIP embedding for path %s", path)
+            return True
         except Exception as e:
-            logging.error(f"Failed to insert embedding for picture {picture_id}: {e}")
+            logging.error(
+                "Failed to insert embedding for path %s: %s",
+                path,
+                e,
+                exc_info=True,
+            )
+            return False
 
-    def search_by_embedding(self, query_embedding: np.ndarray, threshold: float = 0.5):
+    def search_by_embedding(
+        self, query_embedding: np.ndarray, min_similarity: float = 0.5
+    ):
         """Search pictures by embedding similarity.
 
         Args:
             query_embedding: Query embedding vector (512-dim)
-            threshold: Cosine distance threshold (default 0.5)
-                      Lower distance = more similar
-                      Distance range: [0, 2] where 0 = identical
+            min_similarity: Minimum inclusive cosine similarity (default 0.5).
+                            Higher values require a closer match; 1.0 is an
+                            identical normalized embedding.
 
         Returns:
             List of picture records sorted by similarity
@@ -326,13 +374,15 @@ class DB:
             # sqlite-vec accepts numpy arrays directly
             query_vec = query_embedding.astype(np.float32)
 
-            # Search with threshold (pass query embedding for distance calculation)
+            # Filter using the same cosine similarity shown in result file_info.
             results = self.conn.execute(
-                SEARCH_BY_EMBEDDING_SQL, (query_vec, threshold, query_vec)
+                SEARCH_BY_EMBEDDING_SQL, (query_vec, query_vec, min_similarity)
             ).fetchall()
 
             logging.debug(
-                f"Found {len(results)} similar images (threshold={threshold})"
+                "Found %s images with CLIP similarity >= %.4f",
+                len(results),
+                min_similarity,
             )
             return results
 

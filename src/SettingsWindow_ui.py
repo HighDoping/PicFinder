@@ -23,7 +23,7 @@ class Ui_Settings(object):
     def setupUi(self, Settings):
         if not Settings.objectName():
             Settings.setObjectName(u"Settings")
-        Settings.resize(500, 496)
+        Settings.resize(379, 619)
         icon = QIcon()
         icon.addFile(u"icon.ico", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
         Settings.setWindowIcon(icon)
@@ -203,17 +203,40 @@ class Ui_Settings(object):
 
         self.groupBox_6 = QGroupBox(Settings)
         self.groupBox_6.setObjectName(u"groupBox_6")
-        self.horizontalLayout_6 = QHBoxLayout(self.groupBox_6)
-        self.horizontalLayout_6.setObjectName(u"horizontalLayout_6")
-        self.checkBox_enable_CLIP = QCheckBox(self.groupBox_6)
-        self.checkBox_enable_CLIP.setObjectName(u"checkBox_enable_CLIP")
-
-        self.horizontalLayout_6.addWidget(self.checkBox_enable_CLIP)
-
+        self.verticalLayout_4 = QVBoxLayout(self.groupBox_6)
+        self.verticalLayout_4.setObjectName(u"verticalLayout_4")
         self.checkBox_load_all = QCheckBox(self.groupBox_6)
         self.checkBox_load_all.setObjectName(u"checkBox_load_all")
 
-        self.horizontalLayout_6.addWidget(self.checkBox_load_all)
+        self.verticalLayout_4.addWidget(self.checkBox_load_all)
+
+        self.horizontalLayout_11 = QHBoxLayout()
+        self.horizontalLayout_11.setObjectName(u"horizontalLayout_11")
+        self.checkBox_enable_CLIP = QCheckBox(self.groupBox_6)
+        self.checkBox_enable_CLIP.setObjectName(u"checkBox_enable_CLIP")
+
+        self.horizontalLayout_11.addWidget(self.checkBox_enable_CLIP)
+
+        self.horizontalLayout_6 = QHBoxLayout()
+        self.horizontalLayout_6.setObjectName(u"horizontalLayout_6")
+        self.label_8 = QLabel(self.groupBox_6)
+        self.label_8.setObjectName(u"label_8")
+
+        self.horizontalLayout_6.addWidget(self.label_8)
+
+        self.doubleSpinBox_CLIP_threshold = QDoubleSpinBox(self.groupBox_6)
+        self.doubleSpinBox_CLIP_threshold.setObjectName(u"doubleSpinBox_CLIP_threshold")
+        self.doubleSpinBox_CLIP_threshold.setMaximum(1.000000000000000)
+        self.doubleSpinBox_CLIP_threshold.setSingleStep(0.010000000000000)
+        self.doubleSpinBox_CLIP_threshold.setValue(0.500000000000000)
+
+        self.horizontalLayout_6.addWidget(self.doubleSpinBox_CLIP_threshold)
+
+
+        self.horizontalLayout_11.addLayout(self.horizontalLayout_6)
+
+
+        self.verticalLayout_4.addLayout(self.horizontalLayout_11)
 
 
         self.verticalLayout_6.addWidget(self.groupBox_6)
@@ -256,8 +279,8 @@ class Ui_Settings(object):
         self.checkBox_update.setText(QCoreApplication.translate("Settings", u"Fully Update Database", None))
         self.label_6.setText(QCoreApplication.translate("Settings", u"Parallel:", None))
         self.groupBox_6.setTitle(QCoreApplication.translate("Settings", u"Search Setting", None))
-        self.checkBox_enable_CLIP.setText(QCoreApplication.translate("Settings", u"Search with CLIP", None))
         self.checkBox_load_all.setText(QCoreApplication.translate("Settings", u"Load Images when start up", None))
+        self.checkBox_enable_CLIP.setText(QCoreApplication.translate("Settings", u"Search with CLIP", None))
+        self.label_8.setText(QCoreApplication.translate("Settings", u"Min similarity:", None))
         self.pushButton_save.setText(QCoreApplication.translate("Settings", u"Save", None))
     # retranslateUi
-

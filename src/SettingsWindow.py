@@ -3,13 +3,14 @@
 import logging
 from pathlib import Path
 
-from PySide6.QtCore import QSettings
+from PySide6.QtCore import QSettings, Signal
 from PySide6.QtWidgets import QWidget
 
 from SettingsWindow_ui import Ui_Settings
 
 
 class SettingsWindow(QWidget, Ui_Settings):
+    finished = Signal()
     def __init__(self):
         super(SettingsWindow, self).__init__()
         self.setupUi(self)
@@ -85,12 +86,16 @@ class SettingsWindow(QWidget, Ui_Settings):
             self.settings.value("FullUpdate", False, type=bool)
         )
 
+        self.checkBox_load_all.setChecked(
+            self.settings.value("load_all", False, type=bool)
+        )
+
         self.checkBox_enable_CLIP.setChecked(
             self.settings.value("enable_CLIP", False, type=bool)
         )
 
-        self.checkBox_load_all.setChecked(
-            self.settings.value("load_all", False, type=bool)
+        self.doubleSpinBox_CLIP_threshold.setValue(
+            float(self.settings.value("CLIP_threshold", 0.5))
         )
         self.save_settings()
 
@@ -117,9 +122,13 @@ class SettingsWindow(QWidget, Ui_Settings):
         self.settings.setValue("CLIP_model", self.comboBox_CLIP_model.currentText())
         self.settings.setValue("parallel", self.spinBox_parallel.value())
         self.settings.setValue("FullUpdate", self.checkBox_update.isChecked())
-        self.settings.setValue("enable_CLIP", self.checkBox_enable_CLIP.isChecked())
         self.settings.setValue("load_all", self.checkBox_load_all.isChecked())
+        self.settings.setValue("enable_CLIP", self.checkBox_enable_CLIP.isChecked())
+        self.settings.setValue(
+            "CLIP_threshold", self.doubleSpinBox_CLIP_threshold.value()
+        )
 
     def gui_save(self):
         self.save_settings()
+        self.finished.emit()
         self.close()

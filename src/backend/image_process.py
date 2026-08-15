@@ -20,6 +20,7 @@ from backend.yolo import YOLO26, YOLO26Cls
 
 try:
     from backend.clip_model import CLIPModel
+
     CLIP_AVAILABLE = True
 except ImportError as e:
     CLIP_AVAILABLE = False
@@ -29,9 +30,7 @@ rapidocr_params = {
     "Det.engine_type": rapidocr.EngineType.ONNXRUNTIME,
     "Cls.engine_type": rapidocr.EngineType.ONNXRUNTIME,
     "Rec.engine_type": rapidocr.EngineType.ONNXRUNTIME,
-    "EngineConfig.onnxruntime.use_coreml": (
-        True if platform.system() == "Darwin" else False
-    ),
+    "EngineConfig.onnxruntime.use_coreml": False,
     "Det.lang_type": rapidocr.LangDet.CH,
     "Det.model_type": rapidocr.ModelType.SERVER,
     "Det.ocr_version": rapidocr.OCRVersion.PPOCRV5,
@@ -102,6 +101,16 @@ class ImageProcessor:
         self.ocr_engine = None
         self.clip_model = None
 
+        logging.info(
+            "Image processor configuration: classification=%s, object_detection=%s, "
+            "OCR=%s, CLIP=%s (clip_import_available=%s)",
+            self.cls_model_name,
+            self.obj_model_name,
+            self.ocr_model_name,
+            self.clip_model_name,
+            CLIP_AVAILABLE,
+        )
+
         # 1. Load Classification Model
         if self.cls_model_name != "None":
             path = get_yolo_cls_model_path(self.cls_model_name)
@@ -118,7 +127,9 @@ class ImageProcessor:
             if path:
                 try:
                     self.obj_net = YOLO26(path, conf_thres=self.obj_threshold)
-                    logging.info(f"Loaded Object Detection Model: {self.obj_model_name}")
+                    logging.info(
+                        f"Loaded Object Detection Model: {self.obj_model_name}"
+                    )
                 except Exception as e:
                     logging.error(f"Failed to load object detection model: {e}")
 
@@ -136,15 +147,21 @@ class ImageProcessor:
                 logging.info("Loaded RapidOCR Engine")
             except Exception as e:
                 logging.error(f"Failed to load RapidOCR: {e}")
-        
+
         # 4. Load CLIP Model
         if self.clip_model_name != "None" and CLIP_AVAILABLE:
             try:
                 self.clip_model = CLIPModel()
                 logging.info(f"Loaded CLIP Model: {self.clip_model_name}")
             except Exception as e:
-                logging.error(f"Failed to load CLIP model: {e}")
+                logging.error("Failed to load CLIP model: %s", e, exc_info=True)
                 self.clip_model = None
+        elif self.clip_model_name == "None":
+            logging.info("CLIP image embedding is disabled by the selected model")
+        else:
+            logging.warning(
+                "CLIP image embedding requested but the CLIP module is unavailable"
+            )
 
     def classify(self, image: np.ndarray):
         if not self.cls_net:
@@ -196,21 +213,31 @@ class ImageProcessor:
         if result is None or len(result) == 0:
             return []
         return result
-    
+
     def encode_image_clip(self, image: np.ndarray):
         """Encode image to CLIP embedding."""
         if not self.clip_model:
+            logging.debug("Skipping CLIP encoding because no CLIP model is loaded")
             return None
-        
+
         try:
             embedding = self.clip_model.encode_image(image)
+            logging.debug(
+                "CLIP image inference completed: shape=%s dtype=%s norm=%.6f",
+                embedding.shape,
+                embedding.dtype,
+                np.linalg.norm(embedding),
+            )
             return embedding
         except Exception as e:
-            logging.error(f"CLIP encoding failed: {e}")
+            logging.error("CLIP encoding failed: %s", e, exc_info=True)
             return None
 
     def process_image(self, img_path: Path):
         try:
+            logging.debug(
+                "Processing image %s (CLIP loaded=%s)", img_path, bool(self.clip_model)
+            )
             img_hash = imohash.hashfile(img_path, hexdigest=True)
 
             try:
@@ -223,10 +250,7 @@ class ImageProcessor:
             except Exception as e:
                 return {"error": str(e)}
 
-            res_dict = {
-                "hash": img_hash,
-                "path": img_path.as_posix()
-            }
+            res_dict = {"hash": img_hash, "path": img_path.as_posix()}
 
             def run_cls():
                 if self.cls_net:
@@ -254,7 +278,7 @@ class ImageProcessor:
                     logging.debug(f"Img:{img_path.name}, OCR Time: {t1 - t0:.4f}s")
                     return "OCR", res
                 return "OCR", None
-            
+
             def run_clip():
                 if self.clip_model:
                     t0 = time.perf_counter()
@@ -262,6 +286,9 @@ class ImageProcessor:
                     t1 = time.perf_counter()
                     logging.debug(f"Img:{img_path.name}, CLIP Time: {t1 - t0:.4f}s")
                     return "clip_embedding", res
+                logging.debug(
+                    "Img:%s, CLIP inference skipped (model not loaded)", img_path.name
+                )
                 return "clip_embedding", None
 
             # Execute in parallel using a ThreadPool
@@ -271,7 +298,7 @@ class ImageProcessor:
                     executor.submit(run_cls),
                     executor.submit(run_obj),
                     executor.submit(run_ocr),
-                    executor.submit(run_clip)
+                    executor.submit(run_clip),
                 ]
 
                 # Wait for all to complete and collect results
@@ -280,14 +307,23 @@ class ImageProcessor:
                         key, result = future.result()
                         if result is not None:
                             res_dict[key] = result
+                        elif key == "clip_embedding":
+                            logging.warning(
+                                "No CLIP embedding generated for %s; database insertion will be skipped",
+                                img_path,
+                            )
                     except Exception as e:
                         logging.error(f"Error in parallel task: {e}")
 
+            logging.debug(
+                "Finished %s with result keys: %s", img_path, sorted(res_dict)
+            )
             return res_dict
 
         except Exception as e:
             logging.error(f"Exception:{e}, Img_path:{img_path}", exc_info=True)
             return {"error": str(e)}
+
 
 def read_img(img_path, **kwargs):
     processor = ImageProcessor(**kwargs)

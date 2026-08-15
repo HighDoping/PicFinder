@@ -28,6 +28,7 @@ logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 MODEL_URLS = {
     "vision": "https://huggingface.co/Xenova/clip-vit-base-patch32/resolve/main/onnx/vision_model.onnx",
     "text": "https://huggingface.co/sentence-transformers/clip-ViT-B-32-multilingual-v1/resolve/main/onnx/model.onnx",
+    "text_projection": "https://huggingface.co/sentence-transformers/clip-ViT-B-32-multilingual-v1/resolve/main/2_Dense/model.safetensors",
     "tokenizer": "https://huggingface.co/sentence-transformers/clip-ViT-B-32-multilingual-v1/resolve/main/tokenizer.json",
     "vocab": "https://huggingface.co/sentence-transformers/clip-ViT-B-32-multilingual-v1/resolve/main/vocab.txt",
 }
@@ -36,6 +37,7 @@ MODEL_URLS = {
 TARGET_NAMES = {
     "vision": "clip-vit-b-32-multilingual-vision.onnx",
     "text": "clip-vit-b-32-multilingual-text.onnx",
+    "text_projection": "clip-vit-b-32-multilingual-text-projection.safetensors",
     "tokenizer": "clip-tokenizer.json",
     "vocab": "clip-vocab.txt",
 }
@@ -144,15 +146,12 @@ def main():
 
     # Final verification
     if success:
-        logging.info("\n✓ All CLIP models downloaded and verified successfully!")
+        logging.info("✓ All CLIP models downloaded and verified successfully!")
         logging.info(
             "You can now select 'CLIP-ViT-B-32-multilingual' in PicFinder settings."
         )
-        logging.info(
-            "\nNote: For better multilingual support, install: pip install tokenizers"
-        )
     else:
-        logging.error("\n✗ Some downloads failed. Please check the errors above.")
+        logging.error("✗ Some downloads failed. Please check the errors above.")
         logging.error("Note: You may need to manually download the models from:")
         logging.error(
             "  Vision: https://huggingface.co/Xenova/clip-vit-base-patch32/tree/main/onnx"

@@ -13,6 +13,7 @@ from backend.image_process import ImageProcessor
 
 try:
     from backend.clip_model import CLIPModel
+
     CLIP_AVAILABLE = True
 except ImportError:
     CLIP_AVAILABLE = False
@@ -24,12 +25,12 @@ class SearchWorker(QObject):
     result = Signal(list)
 
     def __init__(
-        self, 
-        db_path: Path, 
+        self,
+        db_path: Path,
         query: str,
         enable_CLIP: bool = False,
         clip_model_name: str = "None",
-        clip_threshold: float = 0.5
+        clip_threshold: float = 0.5,
     ):
         super(SearchWorker, self).__init__()
         self.db = DB(db_path)
@@ -43,41 +44,45 @@ class SearchWorker(QObject):
             # Always perform FTS5 search
             fts_results = self.db.search(self.query)
             logging.debug(f"FTS5 search returned {len(fts_results)} results")
-            
+
             # If CLIP is enabled, perform hybrid search
             if self.enable_CLIP and self.clip_model_name != "None" and CLIP_AVAILABLE:
                 try:
                     # Load CLIP model and encode query
                     clip_model = CLIPModel()
                     query_embedding = clip_model.encode_text(self.query)
-                    
+
                     # Search by embedding similarity
                     clip_results = self.db.search_by_embedding(
-                        query_embedding,
-                        threshold=self.clip_threshold
+                        query_embedding, min_similarity=self.clip_threshold
                     )
-                    logging.debug(f"CLIP search returned {len(clip_results)} results")
-                    
-                    # Merge results (union, deduplicated by id)
-                    result_dict = {result[0]: result for result in fts_results}
+                    logging.debug(
+                        "CLIP search returned %s results (minimum similarity=%.4f)",
+                        len(clip_results),
+                        self.clip_threshold,
+                    )
+
+                    # Add a placeholder so ResultList can consistently read the
+                    # optional CLIP similarity from the final column. A CLIP hit
+                    # replaces an overlapping FTS result with its score.
+                    result_dict = {result[0]: (*result, None) for result in fts_results}
                     for clip_result in clip_results:
-                        if clip_result[0] not in result_dict:
-                            result_dict[clip_result[0]] = clip_result
-                    
+                        result_dict[clip_result[0]] = clip_result
+
                     merged_results = list(result_dict.values())
                     logging.info(
                         f"Hybrid search: {len(fts_results)} FTS5 + "
                         f"{len(clip_results)} CLIP = {len(merged_results)} total"
                     )
                     self.result.emit(merged_results)
-                    
+
                 except Exception as e:
                     logging.warning(f"CLIP search failed, using FTS5 results only: {e}")
                     self.result.emit(fts_results)
             else:
                 # CLIP not enabled or not available, return FTS5 results only
                 self.result.emit(fts_results)
-            
+
             self.db.close()
             self.finished.emit()
         except Exception as e:
@@ -96,6 +101,14 @@ class IndexWorker(QObject):
         self.stopped = False
         self.processor = ImageProcessor(**self.kwargs)
         self.parallel_workers = self.kwargs.get("parallel", 1)
+        logging.info(
+            "Index worker initialized: folder=%s, parallel_workers=%s, CLIP=%s, "
+            "clip_model_loaded=%s",
+            self.folder,
+            self.parallel_workers,
+            self.kwargs.get("CLIP_model", "None"),
+            bool(self.processor.clip_model),
+        )
 
     def run(self):
         try:
@@ -129,6 +142,12 @@ class IndexWorker(QObject):
         self.file_list = list(file_list)
         self.total_files = len(self.file_list)
         logging.info(f"Indexing {self.total_files} files")
+
+        if self.total_files == 0:
+            logging.warning(
+                "No files were scheduled for indexing. Existing unchanged files are "
+                "skipped unless Full Update is enabled, so no CLIP embeddings can be inserted."
+            )
 
         if not self.processor:
             logging.error("ImageProcessor not initialized")
@@ -209,8 +228,8 @@ class IndexWorker(QObject):
             OCR = ""
             ocr_confidence_avg = 0
 
-        # Insert main record and get picture ID
-        picture_id = self.db.insert(
+        # Insert or update the picture metadata before its path-keyed vector.
+        self.db.insert(
             result["hash"],
             rel_path,
             classification,
@@ -220,14 +239,33 @@ class IndexWorker(QObject):
             OCR,
             ocr_confidence_avg,
         )
-        
+
         # Insert CLIP embedding if available
         if "clip_embedding" in result and result["clip_embedding"] is not None:
+            embedding = result["clip_embedding"]
+            logging.debug(
+                "CLIP embedding ready for path %s: shape=%s dtype=%s",
+                rel_path,
+                getattr(embedding, "shape", None),
+                getattr(embedding, "dtype", None),
+            )
             try:
-                self.db.insert_embedding(picture_id, result["clip_embedding"])
-                logging.debug(f"Saved CLIP embedding for {rel_path}")
+                if self.db.insert_embedding(rel_path, embedding):
+                    pass
+                else:
+                    logging.warning("CLIP embedding was not saved for %s", rel_path)
             except Exception as e:
-                logging.error(f"Failed to save CLIP embedding for {rel_path}: {e}")
+                logging.error(
+                    "Failed to save CLIP embedding for %s: %s",
+                    rel_path,
+                    e,
+                    exc_info=True,
+                )
+        else:
+            logging.warning(
+                "Skipping CLIP embedding insertion for %s: no embedding was returned",
+                rel_path,
+            )
 
     def full_finished(self):
         self.db.close()
@@ -268,7 +306,7 @@ class IndexWorker(QObject):
                 else:
                     rel_path = file.relative_to(folder_path).as_posix()
                     if rel_path in existing_entries.keys():
-                        existing_hash = imohash.hashfile(file,hexdigest=True)
+                        existing_hash = imohash.hashfile(file, hexdigest=True)
                         if existing_hash == existing_entries[rel_path]:
                             continue
                         else:

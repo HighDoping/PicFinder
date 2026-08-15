@@ -2,7 +2,7 @@
 from pathlib import Path
 
 from PySide6.QtCore import QSize, Qt, QUrl
-from PySide6.QtGui import QDesktopServices, QIcon
+from PySide6.QtGui import QDesktopServices, QIcon, QPixmap
 from PySide6.QtWidgets import QListWidget, QListWidgetItem, QWidget
 
 from ResultList_ui import Ui_ResultListWidget
@@ -100,7 +100,7 @@ class ResultListWidget(QWidget, Ui_ResultListWidget):
             )
 
             item = QListWidgetItem()
-            item.setIcon(QIcon(file_path.as_posix()))
+            item.setIcon(QPixmap(file_path.as_posix()))
             item.setText(file[2])
             item.setToolTip(file_info)
             self.listWidget_results.addItem(item)

@@ -3,7 +3,7 @@
 ################################################################################
 ## Form generated from reading UI file 'SettingsWindow.ui'
 ##
-## Created by: Qt User Interface Compiler version 6.10.1
+## Created by: Qt User Interface Compiler version 6.11.1
 ##
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
@@ -23,7 +23,7 @@ class Ui_Settings(object):
     def setupUi(self, Settings):
         if not Settings.objectName():
             Settings.setObjectName(u"Settings")
-        Settings.resize(500, 438)
+        Settings.resize(500, 496)
         icon = QIcon()
         icon.addFile(u"icon.ico", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
         Settings.setWindowIcon(icon)
@@ -31,8 +31,8 @@ class Ui_Settings(object):
         self.verticalLayout_6.setObjectName(u"verticalLayout_6")
         self.groupBox = QGroupBox(Settings)
         self.groupBox.setObjectName(u"groupBox")
-        self.verticalLayout_3 = QVBoxLayout(self.groupBox)
-        self.verticalLayout_3.setObjectName(u"verticalLayout_3")
+        self.verticalLayout_7 = QVBoxLayout(self.groupBox)
+        self.verticalLayout_7.setObjectName(u"verticalLayout_7")
         self.groupBox_2 = QGroupBox(self.groupBox)
         self.groupBox_2.setObjectName(u"groupBox_2")
         self.horizontalLayout_8 = QHBoxLayout(self.groupBox_2)
@@ -72,7 +72,7 @@ class Ui_Settings(object):
         self.horizontalLayout_8.addLayout(self.horizontalLayout_3)
 
 
-        self.verticalLayout_3.addWidget(self.groupBox_2)
+        self.verticalLayout_7.addWidget(self.groupBox_2)
 
         self.groupBox_3 = QGroupBox(self.groupBox)
         self.groupBox_3.setObjectName(u"groupBox_3")
@@ -118,7 +118,7 @@ class Ui_Settings(object):
         self.verticalLayout_2.addLayout(self.horizontalLayout_9)
 
 
-        self.verticalLayout_3.addWidget(self.groupBox_3)
+        self.verticalLayout_7.addWidget(self.groupBox_3)
 
         self.groupBox_4 = QGroupBox(self.groupBox)
         self.groupBox_4.setObjectName(u"groupBox_4")
@@ -142,7 +142,31 @@ class Ui_Settings(object):
         self.verticalLayout.addLayout(self.horizontalLayout_5)
 
 
-        self.verticalLayout_3.addWidget(self.groupBox_4)
+        self.verticalLayout_7.addWidget(self.groupBox_4)
+
+        self.groupBox_7 = QGroupBox(self.groupBox)
+        self.groupBox_7.setObjectName(u"groupBox_7")
+        self.verticalLayout_3 = QVBoxLayout(self.groupBox_7)
+        self.verticalLayout_3.setObjectName(u"verticalLayout_3")
+        self.horizontalLayout = QHBoxLayout()
+        self.horizontalLayout.setObjectName(u"horizontalLayout")
+        self.label_7 = QLabel(self.groupBox_7)
+        self.label_7.setObjectName(u"label_7")
+
+        self.horizontalLayout.addWidget(self.label_7)
+
+        self.comboBox_CLIP_model = QComboBox(self.groupBox_7)
+        self.comboBox_CLIP_model.addItem("")
+        self.comboBox_CLIP_model.addItem("")
+        self.comboBox_CLIP_model.setObjectName(u"comboBox_CLIP_model")
+
+        self.horizontalLayout.addWidget(self.comboBox_CLIP_model)
+
+
+        self.verticalLayout_3.addLayout(self.horizontalLayout)
+
+
+        self.verticalLayout_7.addWidget(self.groupBox_7)
 
 
         self.verticalLayout_6.addWidget(self.groupBox)
@@ -179,12 +203,17 @@ class Ui_Settings(object):
 
         self.groupBox_6 = QGroupBox(Settings)
         self.groupBox_6.setObjectName(u"groupBox_6")
-        self.verticalLayout_4 = QVBoxLayout(self.groupBox_6)
-        self.verticalLayout_4.setObjectName(u"verticalLayout_4")
+        self.horizontalLayout_6 = QHBoxLayout(self.groupBox_6)
+        self.horizontalLayout_6.setObjectName(u"horizontalLayout_6")
+        self.checkBox_enable_CLIP = QCheckBox(self.groupBox_6)
+        self.checkBox_enable_CLIP.setObjectName(u"checkBox_enable_CLIP")
+
+        self.horizontalLayout_6.addWidget(self.checkBox_enable_CLIP)
+
         self.checkBox_load_all = QCheckBox(self.groupBox_6)
         self.checkBox_load_all.setObjectName(u"checkBox_load_all")
 
-        self.verticalLayout_4.addWidget(self.checkBox_load_all)
+        self.horizontalLayout_6.addWidget(self.checkBox_load_all)
 
 
         self.verticalLayout_6.addWidget(self.groupBox_6)
@@ -218,10 +247,16 @@ class Ui_Settings(object):
         self.comboBox_OCR_model.setItemText(0, QCoreApplication.translate("Settings", u"RapidOCR", None))
         self.comboBox_OCR_model.setItemText(1, QCoreApplication.translate("Settings", u"None", None))
 
+        self.groupBox_7.setTitle(QCoreApplication.translate("Settings", u"CLIP", None))
+        self.label_7.setText(QCoreApplication.translate("Settings", u"Model:", None))
+        self.comboBox_CLIP_model.setItemText(0, QCoreApplication.translate("Settings", u"CLIP-ViT-B-32-multilingual", None))
+        self.comboBox_CLIP_model.setItemText(1, QCoreApplication.translate("Settings", u"None", None))
+
         self.groupBox_5.setTitle(QCoreApplication.translate("Settings", u"Index Setting", None))
         self.checkBox_update.setText(QCoreApplication.translate("Settings", u"Fully Update Database", None))
         self.label_6.setText(QCoreApplication.translate("Settings", u"Parallel:", None))
         self.groupBox_6.setTitle(QCoreApplication.translate("Settings", u"Search Setting", None))
+        self.checkBox_enable_CLIP.setText(QCoreApplication.translate("Settings", u"Search with CLIP", None))
         self.checkBox_load_all.setText(QCoreApplication.translate("Settings", u"Load Images when start up", None))
         self.pushButton_save.setText(QCoreApplication.translate("Settings", u"Save", None))
     # retranslateUi

@@ -172,7 +172,13 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             pass
         query = self.lineEdit_search.text()
         if self.db_exists_check():
-            self.search_worker = SearchWorker(self.db_path, query)
+            self.search_worker = SearchWorker(
+                self.db_path,
+                query,
+                enable_CLIP=self.settings.get("enable_CLIP", False),
+                clip_model_name=self.settings.get("CLIP_model", "None"),
+                clip_threshold=self.settings.get("CLIP_threshold", 0.5),
+            )
             self.search_worker_thread = QThread()
             self.search_worker.moveToThread(self.search_worker_thread)
             self.search_worker_thread.started.connect(self.search_worker.run)
@@ -220,6 +226,13 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             settings.value("object_detection_conf_threshold", 0.7)
         )
         self.settings["OCR_model"] = settings.value("OCR_model", "RapidOCR")
+        self.settings["CLIP_model"] = settings.value(
+            "CLIP_model", "CLIP-ViT-B-32-multilingual"
+        )
+        self.settings["enable_CLIP"] = settings.value("enable_CLIP", False, type=bool)
+        self.settings["CLIP_threshold"] = float(
+            settings.value("CLIP_threshold", 0.5)
+        )
         self.settings["parallel"] = settings.value("parallel", 3)
         self.settings["FullUpdate"] = settings.value("FullUpdate", False, type=bool)
         self.settings["load_all"] = settings.value("load_all", False)

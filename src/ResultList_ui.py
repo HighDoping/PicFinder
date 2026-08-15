@@ -3,7 +3,7 @@
 ################################################################################
 ## Form generated from reading UI file 'ResultList.ui'
 ##
-## Created by: Qt User Interface Compiler version 6.10.1
+## Created by: Qt User Interface Compiler version 6.11.1
 ##
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
@@ -101,4 +101,3 @@ class Ui_ResultListWidget(object):
         self.toolButton_toNext.setText(QCoreApplication.translate("ResultListWidget", u"\u2192", None))
         self.toolButton_toLast.setText(QCoreApplication.translate("ResultListWidget", u"\u21e5", None))
     # retranslateUi
-

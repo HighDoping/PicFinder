@@ -1,7 +1,11 @@
 # %%
+import logging
 import sqlite3
 import sys
 from pathlib import Path
+
+import numpy as np
+import sqlite_vec
 
 TABLE_SQL = """
 CREATE TABLE IF NOT EXISTS pictures (
@@ -27,6 +31,7 @@ CREATE TABLE IF NOT EXISTS history (
     object_detection_dataset TEXT,
     object_detection_confidence REAL,
     OCR_model TEXT,
+    CLIP_model TEXT,
     Full_update BOOLEAN,
     indexed_at INTEGER DEFAULT (strftime('%s', 'now'))
 );
@@ -86,12 +91,42 @@ DELETE FROM pictures WHERE path = ?;
 """
 
 HISTORY_INSERT_SQL = """
-INSERT INTO history (classification_model, classification_threshold, object_detection_model,object_detection_dataset, object_detection_confidence, OCR_model, Full_update)
-VALUES (?, ?, ?, ?, ?, ?, ?);
+INSERT INTO history (classification_model, classification_threshold, object_detection_model,object_detection_dataset, object_detection_confidence, OCR_model, CLIP_model, Full_update)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?);
 """
 
 RETURN_ALL_SQL = """
 SELECT * FROM pictures;
+"""
+
+# Vector table for CLIP embeddings
+VEC_TABLE_SQL = """
+CREATE VIRTUAL TABLE IF NOT EXISTS vec_pictures USING vec0(
+    embedding float[512]
+);
+"""
+
+# Delete existing embedding for a picture
+DELETE_EMBEDDING_SQL = """
+DELETE FROM vec_pictures WHERE rowid = ?;
+"""
+
+# Insert embedding for a picture
+INSERT_EMBEDDING_SQL = """
+INSERT INTO vec_pictures(rowid, embedding) VALUES (?, ?);
+"""
+
+# Search by embedding similarity with threshold
+SEARCH_BY_EMBEDDING_SQL = """
+SELECT p.* FROM pictures p
+WHERE p.id IN (
+    SELECT rowid FROM vec_pictures
+    WHERE vec_distance_cosine(embedding, ?) < ?
+)
+ORDER BY vec_distance_cosine(
+    (SELECT embedding FROM vec_pictures WHERE rowid = p.id),
+    ?
+);
 """
 
 # prepare for multi-platform
@@ -126,10 +161,30 @@ class DB:
         self.conn.execute("PRAGMA temp_store = 2;")
         self.conn.enable_load_extension(True)
         self.conn.load_extension(extention_path.as_posix())
+
+        # Load sqlite-vec extension for vector similarity search
+        try:
+            sqlite_vec.load(self.conn)
+            self.vec_available = True
+            logging.info("sqlite-vec extension loaded successfully")
+        except Exception as e:
+            self.vec_available = False
+            logging.warning(f"sqlite-vec not available: {e}")
+
         self.conn.execute(TABLE_SQL)
         self.conn.execute(HISTORY_TABLE_SQL)
         self.conn.execute(SEARCH_TABLE_SQL)
         self.conn.executescript(TRIGGER_SQL)
+
+        # Create vector table if extension is available
+        if self.vec_available:
+            try:
+                self.conn.execute(VEC_TABLE_SQL)
+                logging.debug("Vector table initialized")
+            except Exception as e:
+                logging.error(f"Failed to create vector table: {e}")
+                self.vec_available = False
+
         self.jieba = jieba
         if jieba:
             self.init_jieba(dict_path.as_posix())
@@ -159,6 +214,7 @@ class DB:
         object_detection_dataset,
         object_detection_confidence,
         OCR_model,
+        CLIP_model,
         full_update,
     ):
         object_detection_dataset = ",".join(object_detection_dataset)
@@ -171,6 +227,7 @@ class DB:
                 object_detection_dataset,
                 object_detection_confidence,
                 OCR_model,
+                CLIP_model,
                 full_update,
             ),
         )
@@ -196,7 +253,7 @@ class DB:
         OCR,
         ocr_confidence,
     ):
-        self.conn.execute(
+        cursor = self.conn.execute(
             INSERT_SQL,
             (
                 hash,
@@ -210,10 +267,78 @@ class DB:
             ),
         )
         self.conn.commit()
+        # Return the ID of the inserted/updated row
+        if cursor.lastrowid and cursor.lastrowid > 0:
+            return cursor.lastrowid
+        else:
+            # For ON CONFLICT updates, get the ID from the path
+            result = self.conn.execute(
+                "SELECT id FROM pictures WHERE path = ?", (path,)
+            ).fetchone()
+            return result[0] if result else None
 
     def remove(self, path):
         self.conn.execute(REMOVE_SQL, (path,))
         self.conn.commit()
+
+    def insert_embedding(self, picture_id: int, embedding: np.ndarray):
+        """Insert or update CLIP embedding for a picture."""
+        if not self.vec_available:
+            logging.warning("Cannot insert embedding: sqlite-vec not available")
+            return
+
+        try:
+            # sqlite-vec accepts numpy arrays directly
+            # First delete any existing embedding for this picture
+            self.conn.execute(DELETE_EMBEDDING_SQL, (picture_id,))
+            # Then insert the new embedding
+            self.conn.execute(
+                INSERT_EMBEDDING_SQL, (picture_id, embedding.astype(np.float32))
+            )
+            self.conn.commit()
+        except Exception as e:
+            logging.error(f"Failed to insert embedding for picture {picture_id}: {e}")
+
+    def search_by_embedding(self, query_embedding: np.ndarray, threshold: float = 0.5):
+        """Search pictures by embedding similarity.
+
+        Args:
+            query_embedding: Query embedding vector (512-dim)
+            threshold: Cosine distance threshold (default 0.5)
+                      Lower distance = more similar
+                      Distance range: [0, 2] where 0 = identical
+
+        Returns:
+            List of picture records sorted by similarity
+        """
+        if not self.vec_available:
+            logging.warning("Cannot search by embedding: sqlite-vec not available")
+            return []
+
+        try:
+            # Check if vector table has any data
+            count = self.conn.execute("SELECT COUNT(*) FROM vec_pictures").fetchone()[0]
+
+            if count == 0:
+                logging.warning("No embeddings found in database")
+                return []
+
+            # sqlite-vec accepts numpy arrays directly
+            query_vec = query_embedding.astype(np.float32)
+
+            # Search with threshold (pass query embedding for distance calculation)
+            results = self.conn.execute(
+                SEARCH_BY_EMBEDDING_SQL, (query_vec, threshold, query_vec)
+            ).fetchall()
+
+            logging.debug(
+                f"Found {len(results)} similar images (threshold={threshold})"
+            )
+            return results
+
+        except Exception as e:
+            logging.error(f"Failed to search by embedding: {e}")
+            return []
 
     def close(self):
         self.conn.close()

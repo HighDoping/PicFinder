@@ -1,15 +1,21 @@
 # -*- coding: utf-8 -*-
 
 import hashlib
-import imohash
 import logging
 from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
 from pathlib import Path
 
+import imohash
 from PySide6.QtCore import QObject, Signal
 
 from backend.db_ops import DB
 from backend.image_process import ImageProcessor
+
+try:
+    from backend.clip_model import CLIPModel
+    CLIP_AVAILABLE = True
+except ImportError:
+    CLIP_AVAILABLE = False
 
 
 class SearchWorker(QObject):
@@ -17,16 +23,62 @@ class SearchWorker(QObject):
     progress = Signal(int)
     result = Signal(list)
 
-    def __init__(self, db_path: Path, query: str):
+    def __init__(
+        self, 
+        db_path: Path, 
+        query: str,
+        enable_CLIP: bool = False,
+        clip_model_name: str = "None",
+        clip_threshold: float = 0.5
+    ):
         super(SearchWorker, self).__init__()
         self.db = DB(db_path)
         self.query = query
+        self.enable_CLIP = enable_CLIP
+        self.clip_model_name = clip_model_name
+        self.clip_threshold = clip_threshold
 
     def run(self):
         try:
-            result = self.db.search(self.query)
+            # Always perform FTS5 search
+            fts_results = self.db.search(self.query)
+            logging.debug(f"FTS5 search returned {len(fts_results)} results")
+            
+            # If CLIP is enabled, perform hybrid search
+            if self.enable_CLIP and self.clip_model_name != "None" and CLIP_AVAILABLE:
+                try:
+                    # Load CLIP model and encode query
+                    clip_model = CLIPModel()
+                    query_embedding = clip_model.encode_text(self.query)
+                    
+                    # Search by embedding similarity
+                    clip_results = self.db.search_by_embedding(
+                        query_embedding,
+                        threshold=self.clip_threshold
+                    )
+                    logging.debug(f"CLIP search returned {len(clip_results)} results")
+                    
+                    # Merge results (union, deduplicated by id)
+                    result_dict = {result[0]: result for result in fts_results}
+                    for clip_result in clip_results:
+                        if clip_result[0] not in result_dict:
+                            result_dict[clip_result[0]] = clip_result
+                    
+                    merged_results = list(result_dict.values())
+                    logging.info(
+                        f"Hybrid search: {len(fts_results)} FTS5 + "
+                        f"{len(clip_results)} CLIP = {len(merged_results)} total"
+                    )
+                    self.result.emit(merged_results)
+                    
+                except Exception as e:
+                    logging.warning(f"CLIP search failed, using FTS5 results only: {e}")
+                    self.result.emit(fts_results)
+            else:
+                # CLIP not enabled or not available, return FTS5 results only
+                self.result.emit(fts_results)
+            
             self.db.close()
-            self.result.emit(result)
             self.finished.emit()
         except Exception as e:
             logging.error(e, exc_info=True)
@@ -59,6 +111,7 @@ class IndexWorker(QObject):
                     "object_detection_conf_threshold"
                 ],
                 OCR_model=self.kwargs["OCR_model"],
+                CLIP_model=self.kwargs.get("CLIP_model", "None"),
                 full_update=self.kwargs["FullUpdate"],
             )
 
@@ -156,7 +209,8 @@ class IndexWorker(QObject):
             OCR = ""
             ocr_confidence_avg = 0
 
-        self.db.insert(
+        # Insert main record and get picture ID
+        picture_id = self.db.insert(
             result["hash"],
             rel_path,
             classification,
@@ -166,6 +220,14 @@ class IndexWorker(QObject):
             OCR,
             ocr_confidence_avg,
         )
+        
+        # Insert CLIP embedding if available
+        if "clip_embedding" in result and result["clip_embedding"] is not None:
+            try:
+                self.db.insert_embedding(picture_id, result["clip_embedding"])
+                logging.debug(f"Saved CLIP embedding for {rel_path}")
+            except Exception as e:
+                logging.error(f"Failed to save CLIP embedding for {rel_path}: {e}")
 
     def full_finished(self):
         self.db.close()

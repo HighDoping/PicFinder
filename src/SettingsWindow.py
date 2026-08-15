@@ -74,12 +74,21 @@ class SettingsWindow(QWidget, Ui_Settings):
         self.comboBox_OCR_model.setCurrentText(
             self.settings.value("OCR_model", "RapidOCR")
         )
+
+        self.comboBox_CLIP_model.setCurrentText(
+            self.settings.value("CLIP_model", "CLIP-ViT-B-32-multilingual")
+        )
+
         self.spinBox_parallel.setValue(int(self.settings.value("parallel", 3)))
 
         self.checkBox_update.setChecked(
             self.settings.value("FullUpdate", False, type=bool)
         )
-        
+
+        self.checkBox_enable_CLIP.setChecked(
+            self.settings.value("enable_CLIP", False, type=bool)
+        )
+
         self.checkBox_load_all.setChecked(
             self.settings.value("load_all", False, type=bool)
         )
@@ -105,9 +114,10 @@ class SettingsWindow(QWidget, Ui_Settings):
             self.doubleSpinBox_object_detection_confidence.value(),
         )
         self.settings.setValue("OCR_model", self.comboBox_OCR_model.currentText())
+        self.settings.setValue("CLIP_model", self.comboBox_CLIP_model.currentText())
         self.settings.setValue("parallel", self.spinBox_parallel.value())
         self.settings.setValue("FullUpdate", self.checkBox_update.isChecked())
-        
+        self.settings.setValue("enable_CLIP", self.checkBox_enable_CLIP.isChecked())
         self.settings.setValue("load_all", self.checkBox_load_all.isChecked())
 
     def gui_save(self):

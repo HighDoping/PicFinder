@@ -18,6 +18,13 @@ import rapidocr
 from backend.resources.label_list import coco, image_net
 from backend.yolo import YOLO26, YOLO26Cls
 
+try:
+    from backend.clip_model import CLIPModel
+    CLIP_AVAILABLE = True
+except ImportError as e:
+    CLIP_AVAILABLE = False
+    logging.warning(f"CLIP model not available: {e}")
+
 rapidocr_params = {
     "Det.engine_type": rapidocr.EngineType.ONNXRUNTIME,
     "Cls.engine_type": rapidocr.EngineType.ONNXRUNTIME,
@@ -76,6 +83,7 @@ class ImageProcessor:
         object_detection_dataset=None,
         object_detection_conf_threshold=0.7,
         OCR_model="RapidOCR",
+        CLIP_model="None",
         **kwargs,
     ):
         if object_detection_dataset is None:
@@ -87,10 +95,12 @@ class ImageProcessor:
         self.obj_dataset = object_detection_dataset
         self.obj_threshold = object_detection_conf_threshold
         self.ocr_model_name = OCR_model
+        self.clip_model_name = CLIP_model
 
         self.cls_net = None
         self.obj_net = None
         self.ocr_engine = None
+        self.clip_model = None
 
         # 1. Load Classification Model
         if self.cls_model_name != "None":
@@ -126,6 +136,15 @@ class ImageProcessor:
                 logging.info("Loaded RapidOCR Engine")
             except Exception as e:
                 logging.error(f"Failed to load RapidOCR: {e}")
+        
+        # 4. Load CLIP Model
+        if self.clip_model_name != "None" and CLIP_AVAILABLE:
+            try:
+                self.clip_model = CLIPModel()
+                logging.info(f"Loaded CLIP Model: {self.clip_model_name}")
+            except Exception as e:
+                logging.error(f"Failed to load CLIP model: {e}")
+                self.clip_model = None
 
     def classify(self, image: np.ndarray):
         if not self.cls_net:
@@ -177,6 +196,18 @@ class ImageProcessor:
         if result is None or len(result) == 0:
             return []
         return result
+    
+    def encode_image_clip(self, image: np.ndarray):
+        """Encode image to CLIP embedding."""
+        if not self.clip_model:
+            return None
+        
+        try:
+            embedding = self.clip_model.encode_image(image)
+            return embedding
+        except Exception as e:
+            logging.error(f"CLIP encoding failed: {e}")
+            return None
 
     def process_image(self, img_path: Path):
         try:
@@ -223,14 +254,24 @@ class ImageProcessor:
                     logging.debug(f"Img:{img_path.name}, OCR Time: {t1 - t0:.4f}s")
                     return "OCR", res
                 return "OCR", None
+            
+            def run_clip():
+                if self.clip_model:
+                    t0 = time.perf_counter()
+                    res = self.encode_image_clip(img)
+                    t1 = time.perf_counter()
+                    logging.debug(f"Img:{img_path.name}, CLIP Time: {t1 - t0:.4f}s")
+                    return "clip_embedding", res
+                return "clip_embedding", None
 
             # Execute in parallel using a ThreadPool
-            # We use 3 workers since there are 3 distinct tasks
-            with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
+            # We use 4 workers for 4 distinct tasks (cls, obj, ocr, clip)
+            with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
                 futures = [
                     executor.submit(run_cls),
                     executor.submit(run_obj),
-                    executor.submit(run_ocr)
+                    executor.submit(run_ocr),
+                    executor.submit(run_clip)
                 ]
 
                 # Wait for all to complete and collect results

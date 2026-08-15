@@ -4,8 +4,9 @@ import logging
 from pathlib import Path
 
 from PySide6.QtCore import QSettings, Signal
-from PySide6.QtWidgets import QWidget
+from PySide6.QtWidgets import QPushButton, QWidget
 
+from ModelDownloadDialog import ModelDownloadDialog
 from SettingsWindow_ui import Ui_Settings
 
 
@@ -18,6 +19,9 @@ class SettingsWindow(QWidget, Ui_Settings):
         self.settings = QSettings("HighDoping", "PicFinder")
         self.load_settings()
         self.pushButton_save.clicked.connect(self.gui_save)
+        self.pushButton_download_models = QPushButton("Download models")
+        self.verticalLayout_6.insertWidget(1, self.pushButton_download_models)
+        self.pushButton_download_models.clicked.connect(self.open_model_downloader)
         self.comboBox_object_detection_model.currentIndexChanged.connect(
             self.check_models
         )
@@ -36,15 +40,29 @@ class SettingsWindow(QWidget, Ui_Settings):
         }
 
         for model, files in model_files.items():
-            if Path(model_dir / files[0]).exists():
+            if (model_dir / files[1]).exists():
                 self.models_cls.append(model)
-            if Path(model_dir / files[1]).exists():
+            if (model_dir / files[0]).exists():
                 self.models_coco.append(model)
 
+        self.comboBox_classification_model.clear()
+        self.comboBox_object_detection_model.clear()
+        self.comboBox_classification_model.addItem("None")
+        self.comboBox_object_detection_model.addItem("None")
         self.comboBox_classification_model.addItems(self.models_cls)
-        self.comboBox_object_detection_model.addItems(
-            model for model in self.models_coco
-        )
+        self.comboBox_object_detection_model.addItems(self.models_coco)
+
+    def open_model_downloader(self):
+        self.model_download_dialog = ModelDownloadDialog(self)
+        self.model_download_dialog.models_changed.connect(self.refresh_models)
+        self.model_download_dialog.show()
+
+    def refresh_models(self):
+        classification_model = self.comboBox_classification_model.currentText()
+        object_detection_model = self.comboBox_object_detection_model.currentText()
+        self.get_models()
+        self.comboBox_classification_model.setCurrentText(classification_model)
+        self.comboBox_object_detection_model.setCurrentText(object_detection_model)
 
     def check_models(self):
         self.object_detection_model = self.comboBox_object_detection_model.currentText()
